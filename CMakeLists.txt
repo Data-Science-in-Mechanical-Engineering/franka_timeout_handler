@@ -24,10 +24,8 @@ find_package(catkin REQUIRED COMPONENTS franka_control)
 ###############
 
 add_library(franka_real_time_cpp SHARED
-source/cartesial_controller.cpp
-source/controller.cpp
-source/robot.cpp
-source/wrappers.cpp)
+source/cartesian_controller.cpp
+source/robot.cpp)
 
 target_include_directories(franka_real_time_cpp PUBLIC ${EIGEN3_INCLUDE_DIRS})
 target_include_directories(franka_real_time_cpp PUBLIC ${franka_control_INCLUDE_DIRS})

@@ -1,4 +1,4 @@
-#include "../include/franka_real_time/cartesial_controller.h"
+#include "../include/franka_real_time/robot.h"
 #include <iostream>
 
 int _main(int argc, char **argv)
@@ -10,16 +10,18 @@ int _main(int argc, char **argv)
     }
 
     franka_real_time::Robot robot(argv[1]);
-    franka_real_time::CartesialController controller(robot);
+    robot.control_cartesian();
     
-    controller.receive();
-    controller.target_position = controller.position;
-    controller.target_orientation = controller.orientation;
-    controller.send();
+    robot.receive();
+    robot.target_position = robot.position;
+    robot.target_orientation = robot.orientation;
+    robot.send();
     
     std::cout << "Type any key to stop:";
     std::cin.get();
     std::cout << std::endl;
+
+    robot.stop();
     return 0;
 }
 
