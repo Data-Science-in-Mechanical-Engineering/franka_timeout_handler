@@ -37,6 +37,7 @@ void franka_real_time::CartesianController::_control(const franka::RobotState &r
 
     //Receive
     bool front_received = false;
+    bool front_resended = false;
     pthread_mutex_lock(&_mutex);
     {
         //Copying late outputs to backend outputs
@@ -52,9 +53,10 @@ void franka_real_time::CartesianController::_control(const franka::RobotState &r
         //Copying finish (it must be in receive, but receive is not done in destructor)
         joint_torques_native->motion_finished = _finish;
 
-        //Copying backend inputs to frontend inputs and signaling
         if (_front_receiving)
         {
+            //Copying backend inputs to frontend inputs and signaling
+            front_received = true;
             _front_received = true;
             _back_receiving = false;
             _back_received = false;
@@ -67,71 +69,101 @@ void franka_real_time::CartesianController::_control(const franka::RobotState &r
             _robot->rotation = _velocity_rotation.tail(3);
             pthread_cond_signal(&_receive_condition);
         }
+        else if (_front_resending)
+        {
+            //Copying backend inputs to frontend inputs, copying frontend outputs to backend outputs, copying result to frontend result, and signaling
+            front_resended = true;
+            _robot->joint_positions = _joint_positions;
+            _robot->joint_velocities = _joint_velocities;
+            _robot->position = _position;
+            _robot->orientation = _orientation;
+            _robot->velocity = _velocity_rotation.head(3);
+            _robot->rotation = _velocity_rotation.tail(3);
+
+            if (_robot->timeout_update != Update::no) _timeout = _robot->timeout;
+            if (_robot->target_position_update != Update::no) _target_position = _robot->target_position;
+            if (_robot->target_orientation_update != Update::no) _target_orientation = _robot->target_orientation;
+            if (_robot->translation_stiffness_update != Update::no) _translation_stiffness = _robot->translation_stiffness;
+            if (_robot->rotation_stiffness_update != Update::no) _rotation_stiffness = _robot->rotation_stiffness;
+            if (_robot->translation_damping_update != Update::no) _translation_damping = _robot->translation_damping;
+            if (_robot->rotation_damping_update != Update::no) _rotation_damping = _robot->rotation_damping;
+            if (_robot->control_rotation_update != Update::no) _control_rotation = _robot->control_rotation;
+
+            _coriolis = Eigen::Matrix<double, 7, 1>::Map(_robot->_model->coriolis(robot_state).data());
+            _calculate_joint_torques();
+            if (_robot->joint_torques_update != Update::no) _robot->joint_torques = _joint_torques;
+            _robot->late = false;
+
+            pthread_cond_signal(&_receive_condition);
+        }
     }
     pthread_mutex_unlock(&_mutex);
-        
-    //Calculating everything possible without outputs
-    //Only one lonely coriolis here...
-    _coriolis = Eigen::Matrix<double, 7, 1>::Map(_robot->_model->coriolis(robot_state).data());
+    
+    if (!front_resended)
+    {
+        //Calculating everything possible without outputs
+        //Only one lonely coriolis here...
+        _coriolis = Eigen::Matrix<double, 7, 1>::Map(_robot->_model->coriolis(robot_state).data());
 
-    if (!front_received)
-    {
-        //No send
-        //Calculating
-        _calculate_joint_torques();
-    }
-    else
-    {
-        //Send
-        pthread_mutex_lock(&_mutex);
+        if (!front_received)
         {
-            if (_back_received)
+            //No send
+            //Calculating
+            _calculate_joint_torques();
+        }
+        else
+        {
+            //Send
+            pthread_mutex_lock(&_mutex);
             {
-                //Copying frontend outputs to backend outputs
-                if (_robot->timeout_update != Update::no) _timeout = _robot->timeout;
-                if (_robot->target_position_update != Update::no) _target_position = _robot->target_position;
-                if (_robot->target_orientation_update != Update::no) _target_orientation = _robot->target_orientation;
-                if (_robot->translation_stiffness_update != Update::no) _translation_stiffness = _robot->translation_stiffness;
-                if (_robot->rotation_stiffness_update != Update::no) _rotation_stiffness = _robot->rotation_stiffness;
-                if (_robot->translation_damping_update != Update::no) _translation_damping = _robot->translation_damping;
-                if (_robot->rotation_damping_update != Update::no) _rotation_damping = _robot->rotation_damping;
-                if (_robot->control_rotation_update != Update::no) _control_rotation = _robot->control_rotation;
-
-                //Calculating the rest
-                _calculate_joint_torques();
-
-                //Setting results
-                if (_robot->joint_torques_update != Update::no) _robot->joint_torques = _joint_torques;
-                _robot->late = false;
-
-                //Signaling
-                pthread_cond_signal(&_send_condition);
-            }
-            else
-            {
-                _back_receiving = true;
-                timespec time;
-                time.tv_sec = 0;
-                time.tv_nsec = 1000 * _timeout;
-                pthread_cond_timedwait(&_send_condition, &_mutex, &time);
-
                 if (_back_received)
                 {
-                    //Everything already done by frontend
-                }
-                else
-                {
-                    _back_timeout = true;
+                    //Copying frontend outputs to backend outputs
+                    if (_robot->timeout_update != Update::no) _timeout = _robot->timeout;
+                    if (_robot->target_position_update != Update::no) _target_position = _robot->target_position;
+                    if (_robot->target_orientation_update != Update::no) _target_orientation = _robot->target_orientation;
+                    if (_robot->translation_stiffness_update != Update::no) _translation_stiffness = _robot->translation_stiffness;
+                    if (_robot->rotation_stiffness_update != Update::no) _rotation_stiffness = _robot->rotation_stiffness;
+                    if (_robot->translation_damping_update != Update::no) _translation_damping = _robot->translation_damping;
+                    if (_robot->rotation_damping_update != Update::no) _rotation_damping = _robot->rotation_damping;
+                    if (_robot->control_rotation_update != Update::no) _control_rotation = _robot->control_rotation;
 
                     //Calculating the rest
                     _calculate_joint_torques();
 
-                    //Setting late results
-                    _late_joint_torques = _joint_torques;
+                    //Setting results
+                    if (_robot->joint_torques_update != Update::no) _robot->joint_torques = _joint_torques;
+                    _robot->late = false;
+
+                    //Signaling
+                    pthread_cond_signal(&_send_condition);
+                }
+                else
+                {
+                    _back_receiving = true;
+                    timespec time;
+                    time.tv_sec = 0;
+                    time.tv_nsec = 1000 * _timeout;
+                    pthread_cond_timedwait(&_send_condition, &_mutex, &time);
+
+                    if (_back_received)
+                    {
+                        //Everything already done by frontend
+                    }
+                    else
+                    {
+                        _back_timeout = true;
+
+                        //Calculating the rest
+                        _calculate_joint_torques();
+
+                        //Setting late results
+                        _late_joint_torques = _joint_torques;
+                    }
                 }
             }
+            pthread_mutex_unlock(&_mutex);
         }
-        pthread_mutex_unlock(&_mutex);
     }
     Eigen::Matrix<double, 7, 1>::Map(&joint_torques_native->tau_J[0]) = _joint_torques;
 }
@@ -156,7 +188,7 @@ franka_real_time::CartesianController::CartesianController(Robot *robot)
     const double translational_stiffness_constant = 150.0;
     const double rotational_stiffness_constant = 10.0;
 
-    _timeout = 100;
+    _timeout = 200;
     _target_position = _robot->position;
     _target_orientation = _robot->orientation;
     _translation_stiffness = translational_stiffness_constant * Eigen::Matrix<double, 3, 3>::Identity();
@@ -265,8 +297,12 @@ void franka_real_time::CartesianController::send()
 
 void franka_real_time::CartesianController::receive_and_send()
 {
-    receive();
-    send();
+    pthread_mutex_lock(&_mutex);
+    _front_resending = true;
+    pthread_cond_wait(&_receive_condition, &_mutex);
+    _front_resending = false;
+    pthread_mutex_unlock(&_mutex);
+    _front_received = false;
 }
 
 void franka_real_time::CartesianController::send_and_receive()

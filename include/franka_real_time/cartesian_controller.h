@@ -17,10 +17,11 @@ namespace franka_real_time
         Robot *_robot           = nullptr;
 
         //States
-        bool _front_receiving   = false;
-        bool _front_received    = false;
+        bool _front_resending   = false; //Set by front, indicated receive_and_send() is running
+        bool _front_receiving   = false; //Set by front, indicates receive() is running
+        bool _front_received    = false; //Set by front, indicates that front called receive()
 
-        bool _back_receiving    = false; //Set by back, indicates wait() was called
+        bool _back_receiving    = false; //Set by back, indicates thread_cond_timedwait() was called
         bool _back_received     = false; //Set by front, indicates front has arrived
         bool _back_timeout      = false; //Set by back, indicated front has not arrived
 
