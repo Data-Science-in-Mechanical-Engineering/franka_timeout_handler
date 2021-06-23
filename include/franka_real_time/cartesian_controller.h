@@ -10,8 +10,8 @@ namespace franka_real_time
 {
     class Robot;
 
-	///Cartesial controller makes robot try to approach given position with given stiffness and daming matrix
-	class CartesialController : public Controller
+	///Cartesian controller makes robot try to approach given position with given stiffness and daming matrix
+	class CartesianController : public Controller
 	{
     private:
         Robot *_robot           = nullptr;
@@ -73,18 +73,17 @@ namespace franka_real_time
         pthread_cond_t _receive_condition   = PTHREAD_COND_INITIALIZER;
         pthread_cond_t _send_condition      = PTHREAD_COND_INITIALIZER;
         pthread_mutex_t _mutex              = PTHREAD_MUTEX_INITIALIZER;
-        std::thread _backend_thread;
+        pthread_t _backend_thread;
 
         void _calculate_joint_torques();
         void _control(const franka::RobotState &robot_state, franka::Torques *joint_torques_array);
-        static void _control_thread_function(CartesialController *controller);
 
     public:
-		CartesialController(Robot *robot);
+		CartesianController(Robot *robot);
         virtual void receive();
 		virtual void send();
 		virtual void receive_and_send();
 		virtual void send_and_receive();
-        ~CartesialController();
+        ~CartesianController();
 	};
 }

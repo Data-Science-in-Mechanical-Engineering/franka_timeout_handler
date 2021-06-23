@@ -3,12 +3,13 @@
 
 franka_real_time::Robot::Robot(std::string ip) : _robot(ip)
 {
+    _robot.automaticErrorRecovery();
     _model = new franka::Model(_robot.loadModel());
 }
 
 void franka_real_time::Robot::control_cartesian()
 {
-    _controller = new CartesialController(this);
+    _controller = new CartesianController(this);
 }
 
 void franka_real_time::Robot::update(Update upd)

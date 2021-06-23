@@ -10,7 +10,7 @@
 
 namespace franka_real_time
 {
-    class CartesialController;
+    class CartesianController;
 
 	///Franka Panda robot@n
     ///Sends and receies signals from the robot. The main freature of the API is that the user may try to update "output" fields between `send()` and `receive()`,
@@ -21,7 +21,7 @@ namespace franka_real_time
     /// - Result: fileds are refreshed when signal is sent
 	class Robot
 	{
-    friend CartesialController;
+    friend CartesianController;
     private:
         franka::Robot _robot;
         franka::Model *_model = nullptr;
@@ -32,20 +32,20 @@ namespace franka_real_time
 		Eigen::Matrix<double, 7, 1> joint_positions;
         ///Joint velocities, belongs to "input" group
 		Eigen::Matrix<double, 7, 1> joint_velocities;
-		///Cartesial position, belongs to "input" group
+		///Cartesian position, belongs to "input" group
 		Eigen::Matrix<double, 3, 1> position;
-        ///Cartesial orientation, belongs to "input" group
+        ///Cartesian orientation, belongs to "input" group
 		Eigen::Quaterniond orientation;
-		///Cartesial velocity, belongs to "input" group
+		///Cartesian velocity, belongs to "input" group
 		Eigen::Matrix<double, 3, 1> velocity;
-        ///Cartesial rotation, belongs to "input" group
+        ///Cartesian rotation, belongs to "input" group
 		Eigen::Matrix<double, 3, 1> rotation;
 
         ///Time in microseconds the controller waits for `send()` after `receive()`, belongs to "output" group
 		unsigned int timeout;
-        ///Cartesial position of tartget, belongs to "output" group
+        ///Cartesian position of tartget, belongs to "output" group
 		Eigen::Matrix<double, 3, 1> target_position;
-        ///Cartesial orientation of tartget, belongs to "output" group
+        ///Cartesian orientation of tartget, belongs to "output" group
 		Eigen::Quaterniond target_orientation;
         ///Translation stiffness matrix, belongs to "output" group
 		Eigen::Matrix<double, 3, 3> translation_stiffness;
@@ -60,9 +60,9 @@ namespace franka_real_time
 
         ///Application mode of `timeout` field
 		Update timeout_update               = Update::if_not_late;
-        ///Application mode of `cartesial_target_position`
+        ///Application mode of `cartesian_target_position`
 		Update target_position_update       = Update::if_not_late;
-        ///Application mode of `cartesial_target_orientation`
+        ///Application mode of `cartesian_target_orientation`
 		Update target_orientation_update    = Update::if_not_late;
         ///Application mode of `translation_stiffness`
 		Update translation_stiffness_update = Update::if_not_late;

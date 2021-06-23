@@ -2,7 +2,7 @@
 #include "../include/franka_real_time/robot.h"
 #include <stdexcept>
 
-void franka_real_time::CartesialController::_calculate_joint_torques()
+void franka_real_time::CartesianController::_calculate_joint_torques()
 {
     Eigen::Matrix<double, 6, 1> cartesian_reaction;
     cartesian_reaction.setZero();
@@ -24,7 +24,7 @@ void franka_real_time::CartesialController::_calculate_joint_torques()
     _joint_torques = _jacobian.transpose() * cartesian_reaction + _coriolis;  
 }
 
-void franka_real_time::CartesialController::_control(const franka::RobotState &robot_state, franka::Torques *joint_torques_native)
+void franka_real_time::CartesianController::_control(const franka::RobotState &robot_state, franka::Torques *joint_torques_native)
 {
     //Setting backend inputs
     _joint_positions = Eigen::Matrix<double, 7, 1>::Map(robot_state.q.data());
@@ -136,17 +136,7 @@ void franka_real_time::CartesialController::_control(const franka::RobotState &r
     Eigen::Matrix<double, 7, 1>::Map(&joint_torques_native->tau_J[0]) = _joint_torques;
 }
 
-void franka_real_time::CartesialController::_control_thread_function(CartesialController *controller)
-{
-    controller->_robot->_robot.control([controller](const franka::RobotState &robot_state, franka::Duration duration) -> franka::Torques
-    {
-        franka::Torques joint_torques_native{0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
-        controller->_control(robot_state, &joint_torques_native);
-        return joint_torques_native;
-    });
-}
-
-franka_real_time::CartesialController::CartesialController(Robot *robot)
+franka_real_time::CartesianController::CartesianController(Robot *robot)
 {
     _robot = robot;
 
@@ -184,13 +174,29 @@ franka_real_time::CartesialController::CartesialController(Robot *robot)
     _robot->control_rotation = _control_rotation;
 
     //Technical
-    if (pthread_cond_init(&_receive_condition, nullptr) < 0) throw std::runtime_error("franka_real_time: pthread_cond_init failed");
-    if (pthread_cond_init(&_send_condition, nullptr) < 0) throw std::runtime_error("franka_real_time: pthread_cond_init failed");
-    if (pthread_mutex_init(&_mutex, nullptr) < 0) throw std::runtime_error("franka_real_time: pthread_mutex_init failed");
-    _backend_thread = std::thread(_control_thread_function, this);
+    if (pthread_cond_init(&_receive_condition, nullptr) != 0) throw std::runtime_error("franka_real_time: pthread_cond_init failed");
+    if (pthread_cond_init(&_send_condition, nullptr) != 0) throw std::runtime_error("franka_real_time: pthread_cond_init failed");
+    if (pthread_mutex_init(&_mutex, nullptr) != 0) throw std::runtime_error("franka_real_time: pthread_mutex_init failed");
+    pthread_attr_t pthread_attributes;
+    if (pthread_attr_init(&pthread_attributes) != 0) throw std::runtime_error("franka_real_time: pthread_attr_init failed");;
+    if (pthread_attr_setschedpolicy(&pthread_attributes, SCHED_FIFO) != 0) throw std::runtime_error("franka_real_time: pthread_attr_setschedpolicy failed");
+    sched_param scheduling_parameters;
+    scheduling_parameters.sched_priority = 98;
+    if (pthread_attr_setschedparam(&pthread_attributes, &scheduling_parameters) != 0) throw std::runtime_error("franka_real_time: pthread_attr_setschedparam failed");;;
+    if (pthread_attr_setinheritsched(&pthread_attributes, PTHREAD_EXPLICIT_SCHED) != 0) throw std::runtime_error("franka_real_time: pthread_attr_setinheritsched failed");;;
+    if (pthread_create(&_backend_thread, &pthread_attributes, [](void* controller) -> void*
+    {
+        ((CartesianController*)controller)->_robot->_robot.control([controller](const franka::RobotState &robot_state, franka::Duration duration) -> franka::Torques
+        {
+            franka::Torques joint_torques_native{0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
+            ((CartesianController*)controller)->_control(robot_state, &joint_torques_native);
+            return joint_torques_native;
+        });
+        return nullptr;
+    }, this) != 0) throw std::runtime_error("franka_real_time: pthread_create failed");
 }
 
-void franka_real_time::CartesialController::receive()
+void franka_real_time::CartesianController::receive()
 {
     pthread_mutex_lock(&_mutex);
     _front_receiving = true;
@@ -201,9 +207,9 @@ void franka_real_time::CartesialController::receive()
 }
 
 		
-void franka_real_time::CartesialController::send()
+void franka_real_time::CartesianController::send()
 {
-    if (!_front_received) throw std::runtime_error("franka_real_time: CartesialControlle did not call receive()");
+    if (!_front_received) throw std::runtime_error("franka_real_time: CartesianControlle did not call receive()");
     _front_received = false;
 
     pthread_mutex_lock(&_mutex);
@@ -257,22 +263,22 @@ void franka_real_time::CartesialController::send()
     pthread_mutex_unlock(&_mutex);
 }
 
-void franka_real_time::CartesialController::receive_and_send()
+void franka_real_time::CartesianController::receive_and_send()
 {
     receive();
     send();
 }
 
-void franka_real_time::CartesialController::send_and_receive()
+void franka_real_time::CartesianController::send_and_receive()
 {
     send();
     receive();
 }
 
-franka_real_time::CartesialController::~CartesialController()
+franka_real_time::CartesianController::~CartesianController()
 {
     _finish = true;
-    _backend_thread.join();
+    pthread_join(_backend_thread, nullptr);
     pthread_cond_destroy(&_receive_condition);
     pthread_cond_destroy(&_send_condition);
     pthread_mutex_destroy(&_mutex);

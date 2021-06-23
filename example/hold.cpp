@@ -5,7 +5,7 @@ int _main(int argc, char **argv)
 {
     if (argc != 2)
     {
-        std::cout << "Usage: ./move IP" << std::endl;
+        std::cout << "Usage: ./hold IP" << std::endl;
         return 1;
     }
 
@@ -15,13 +15,14 @@ int _main(int argc, char **argv)
     robot.receive();
     robot.target_position = robot.position;
     robot.target_orientation = robot.orientation;
-    robot.send();
     
-    std::cout << "Type any key to stop:";
-    std::cin.get();
-    std::cout << std::endl;
+    while (true)
+    {
+        robot.receive();
+        robot.send();
+        std::cout << (robot.late ? "Late" : "Not late") << std::endl;
+    }
 
-    robot.stop();
     return 0;
 }
 
