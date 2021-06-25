@@ -12,13 +12,7 @@ namespace franka_real_time
 {
     class CartesianController;
 
-	///Franka Panda robot@n
-    ///Sends and receies signals from the robot. The main freature of the API is that the user may try to update "output" fields between `send()` and `receive()`,
-    ///so that new values are applied on the save tact of the robot@n
-    ///Robot's fields are divided in three groups:@n
-    /// - Input: fields are refreshed when signal is received
-    /// - Output: fields are send to robot when signal is sent
-    /// - Result: fileds are refreshed when signal is sent
+	///Franka Panda robot
 	class Robot
 	{
     friend CartesianController;
@@ -84,10 +78,12 @@ namespace franka_real_time
 		bool late                           = false;
 
         ///Creates robot
+        ///@param ip IPv4 address of the robot
 		Robot(std::string ip);
         ///Starts cartesian controller
         void control_cartesian();
         ///Sets update mode to all outputs
+        ///@param update Update mode to be set
 		void update(Update update);
 		///Waits for next signal and refreshes inputs
 		void receive();
@@ -105,3 +101,61 @@ namespace franka_real_time
 		~Robot();
 	};
 }
+
+/** @mainpage Welcome to Franka real-time
+Here you will find a small and simple library that allows non-real-time programs to operate with Franka Panda robot at hight frequency.
+
+@tableofcontents
+
+@section Usage
+In order to understand what this library does, it may be helpful to take a look at an example of robot control with [libfranka](https://github.com/frankaemika/libfranka):
+@code {.cpp}
+franka::Robot robot("192.168.0.1");
+robot.control([](const franka::RobotState &robot_state, franka::Duration time) -> franka::Torques
+{
+	//Robot called our function, we have have ~300 microseconds to analyze `robot_state` and return torques
+	return calculate_torques_from_robot_state(robot_state);
+});
+@endcode
+
+*for `Python` programmers: here a multi-line lambda function that accepts state and returns torques, is passed `robot.control` function*
+
+Direct `Python` wrapper of this code is possible, but if `Python` freezes (for example because of garbage collector), an error would occur. The library's goal is to avoid this situation and transform the code above into this:
+@code{.cpp}
+franka_real_time::Robot robot("192.168.0.1");
+robot.start_cartesian();
+//We started control loop, now we need to wait
+robot.receive();
+//The robot called internal function, we have ~300 microseconds to analyze and change `robot`
+robot.send();
+//We might have exceeded the timeout and our changes might be impossible to apply, but nothing critical happened to the robot
+printf(robot.late ? "Late" : "Not late");
+@endcode
+
+Fields of `Robot` class can be divided in three groups:
+ - Input: fields are refreshed with `receive()` (positions, velocities, etc.)
+ - Output: fields are applied with `send()` (stiffness, damping, etc.)
+ - Result: fileds are refreshed with `send()` (torques and lateness indicator)
+
+Currently there exists only one controller: `CartesianController`, which makes the robot stand in given cartesian position.
+
+@section Dependencies
+The library depends on:
+ - [libfranka](https://github.com/frankaemika/libfranka) (as part of ROS)
+ - [Eigen](https://eigen.tuxfamily.org)
+ - [pybind11](https://github.com/pybind/pybind11) (optionally)
+ - [CMake](https://cmake.org) >= `3.10.2`
+ - Fully preemptable Linux kernel
+ - `C++11` compatible compiler
+
+@section Installation
+@code
+mkdir build
+cd build
+cmake ..
+cmake --build .
+@endcode
+
+@section Documentation
+[Doxygen](https://www.doxygen.nl) documentation is provided.
+*/

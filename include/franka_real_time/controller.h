@@ -2,10 +2,13 @@
 
 namespace franka_real_time
 {
+    class Robot;
+
     ///Abstract controller
     class Controller
     {
-    public:
+    friend Robot;
+    private:
         virtual void receive()          = 0;
 		virtual void send()             = 0;
 		virtual void receive_and_send() = 0;

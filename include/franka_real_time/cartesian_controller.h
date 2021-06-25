@@ -13,6 +13,7 @@ namespace franka_real_time
 	///Cartesian controller makes robot try to approach given position with given stiffness and daming matrix
 	class CartesianController : public Controller
 	{
+    friend Robot;
     private:
         Robot *_robot           = nullptr;
 
@@ -79,7 +80,6 @@ namespace franka_real_time
         void _calculate_joint_torques();
         void _control(const franka::RobotState &robot_state, franka::Torques *joint_torques_array);
 
-    public:
 		CartesianController(Robot *robot);
         virtual void receive();
 		virtual void send();
