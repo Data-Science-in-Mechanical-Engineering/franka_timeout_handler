@@ -52,21 +52,21 @@ namespace franka_real_time
 
         //Buffer for laties
         unsigned int _late_timeout;
-        bool _late_timeout_update               = false;
+        bool _late_update_timeout               = false;
 		Eigen::Matrix<double, 3, 1> _late_target_position;
-        bool _late_target_position_update       = false;
+        bool _late_update_target_position       = false;
 		Eigen::Quaterniond _late_target_orientation;
-        bool _late_target_orientation_update    = false;
+        bool _late_update_target_orientation    = false;
 		Eigen::Matrix<double, 3, 3> _late_translation_stiffness;
-        bool _late_translation_stiffness_update = false;
+        bool _late_update_translation_stiffness = false;
         Eigen::Matrix<double, 3, 3> _late_rotation_stiffness;
-        bool _late_rotation_stiffness_update    = false;
+        bool _late_update_rotation_stiffness    = false;
 		Eigen::Matrix<double, 3, 3> _late_translation_damping;
-        bool _late_translation_damping_update   = false;
+        bool _late_update_translation_damping   = false;
         Eigen::Matrix<double, 3, 3> _late_rotation_damping;
-        bool _late_rotation_damping_update      = false;
+        bool _late_update_rotation_damping      = false;
         bool _late_control_rotation;
-        bool _late_control_rotation_update      = false;
+        bool _late_update_control_rotation      = false;
 
 
         Eigen::Matrix<double, 7, 1> _late_joint_torques;

@@ -13,14 +13,14 @@ int _main(int argc, char **argv)
     robot.control_cartesian();
     
     robot.receive();
-    robot.target_position = robot.position;
-    robot.target_orientation = robot.orientation;
+    robot.set_target_position(robot.get_position());
+    robot.set_target_orientation(robot.get_orientation());
     
     while (true)
     {
         robot.receive();
         robot.send();
-        std::cout << (robot.late ? "Late" : "Not late") << std::endl;
+        std::cout << (robot.get_late() ? "Late" : "Not late") << std::endl;
     }
 
     return 0;

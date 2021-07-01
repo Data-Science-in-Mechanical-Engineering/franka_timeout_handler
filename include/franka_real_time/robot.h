@@ -21,71 +21,134 @@ namespace franka_real_time
         franka::Model *_model = nullptr;
         Controller *_controller = nullptr;
 
+        //Input
+        Eigen::Matrix<double, 7, 1> _joint_positions;
+        Eigen::Matrix<double, 7, 1> _joint_velocities;
+		Eigen::Matrix<double, 3, 1> _position;
+        Eigen::Quaterniond _orientation;
+		Eigen::Matrix<double, 3, 1> _velocity;
+        Eigen::Matrix<double, 3, 1> _rotation;
+
+        //Output
+        unsigned int _timeout;
+        Eigen::Matrix<double, 3, 1> _target_position;
+        Eigen::Quaterniond _target_orientation;
+        Eigen::Matrix<double, 3, 3> _translation_stiffness;
+        Eigen::Matrix<double, 3, 3> _rotation_stiffness;
+        Eigen::Matrix<double, 3, 3> _translation_damping;
+        Eigen::Matrix<double, 3, 3> _rotation_damping;
+        bool _control_rotation;
+
+		Update _update_timeout               = Update::yes;
+        Update _update_target_position       = Update::yes;
+        Update _update_target_orientation    = Update::yes;
+        Update _update_translation_stiffness = Update::yes;
+        Update _update_rotation_stiffness    = Update::yes;
+        Update _update_translation_damping   = Update::yes;
+        Update _update_rotation_damping      = Update::yes;
+        Update _update_control_rotation      = Update::yes;
+
+        //Result
+		Eigen::Matrix<double, 7, 1> _joint_torques;
+        Update _update_joint_torques         = Update::yes;
+		bool _late                           = false;
+
 	public:
-        ///Joint positions, belongs to "input" group
-		Eigen::Matrix<double, 7, 1> joint_positions;
-        ///Joint velocities, belongs to "input" group
-		Eigen::Matrix<double, 7, 1> joint_velocities;
-		///Cartesian position, belongs to "input" group
-		Eigen::Matrix<double, 3, 1> position;
-        ///Cartesian orientation, belongs to "input" group
-		Eigen::Quaterniond orientation;
-		///Cartesian velocity, belongs to "input" group
-		Eigen::Matrix<double, 3, 1> velocity;
-        ///Cartesian rotation, belongs to "input" group
-		Eigen::Matrix<double, 3, 1> rotation;
+        ///Returns joint positions (input)
+		Eigen::Matrix<double, 7, 1> get_joint_positions()   const;
+        ///Returns joint velocities (input)
+		Eigen::Matrix<double, 7, 1> get_joint_velocities()  const;
+		///Returns cartesian position (input)
+		Eigen::Matrix<double, 3, 1> get_position()          const;
+        ///Returns cartesian orientation (input)
+		Eigen::Quaterniond get_orientation()                const;
+		///Returns cartesian velocity (input)
+		Eigen::Matrix<double, 3, 1> get_velocity()          const;
+        ///Returns cartesian rotation (input)
+		Eigen::Matrix<double, 3, 1> get_rotation()          const;
 
-        ///Time in microseconds the controller waits for `send()` after `receive()`, belongs to "output" group
-		unsigned int timeout;
-        ///Cartesian position of tartget, belongs to "output" group
-		Eigen::Matrix<double, 3, 1> target_position;
-        ///Cartesian orientation of tartget, belongs to "output" group
-		Eigen::Quaterniond target_orientation;
-        ///Translation stiffness matrix, belongs to "output" group
-		Eigen::Matrix<double, 3, 3> translation_stiffness;
-        ///Rotation stiffness matrix, belongs to "output" group
-        Eigen::Matrix<double, 3, 3> rotation_stiffness;
-        ///Translation damping matrix, belongs to "output" group
-		Eigen::Matrix<double, 3, 3> translation_damping;
-        ///Translation damping matrix, belongs to "output" group
-        Eigen::Matrix<double, 3, 3> rotation_damping;
-        ///Indicator if rotation should be handled, belongs to "output" group
-        bool control_rotation;
+        ///Sets timeout in microsencods (output)
+        void set_timeout(unsigned int timeout);
+        ///Sets cartesian position of tartget (output)
+        void set_target_position(Eigen::Matrix<double, 3, 1> position);
+        ///Sets cartesian orientation of tartget (output)
+        void set_target_orientation(Eigen::Quaterniond orientation);
+        ///Sets translation stiffness matrix (output)
+        void set_translation_stiffness(Eigen::Matrix<double, 3, 3> stiffness);
+        ///Sets rotation stiffness matrix (output)
+        void set_rotation_stiffness(Eigen::Matrix<double, 3, 3> stiffness);
+        ///Sets translation damping matrix (output)
+        void set_translation_damping(Eigen::Matrix<double, 3, 3> damping);
+        ///Sets translation damping matrix (output)
+        void set_rotation_damping(Eigen::Matrix<double, 3, 3> damping);
+        ///Sets indicator if rotation should be handled (output)
+        void set_control_rotation(bool control);
+        ///Returns timeout in microsencods (output)
+        unsigned int get_timeout()                              const;
+        ///Returns cartesian position of tartget (output)
+        Eigen::Matrix<double, 3, 1> get_target_position()       const;
+        ///Returns cartesian orientation of tartget (output)
+        Eigen::Quaterniond get_target_orientation()             const;
+        ///Returns translation stiffness matrix (output)
+        Eigen::Matrix<double, 3, 3> get_translation_stiffness() const;
+        ///Returns rotation stiffness matrix (output)
+        Eigen::Matrix<double, 3, 3> get_rotation_stiffness()    const;
+        ///Returns translation damping matrix (output)
+        Eigen::Matrix<double, 3, 3> get_translation_damping()   const;
+        ///Returns translation damping matrix (output)
+        Eigen::Matrix<double, 3, 3> get_rotation_damping()      const;
+        ///Returns indicator if rotation should be handled (output)
+        bool get_control_rotation()                             const;
+        ///Sets update mode of timeout (output)
+        void set_timeout_update(Update update);
+        ///Sets update mode of target cartesian position (output)
+        void set_target_position_update(Update update);
+        ///Sets update mode of target cartesian orientation (output)
+        void set_target_orientation_update(Update update);
+        ///Sets update mode of translation stiffness matrix (output)
+        void set_translation_stiffness_update(Update update);
+        ///Sets update mode of rotation stiffness matrix (output)
+        void set_rotation_stiffness_update(Update update);
+        ///Sets update mode of translation damping matrix (output)
+        void set_translation_damping_update(Update update);
+        ///Sets update mode of translation damping matrix (output)
+        void set_rotation_damping_update(Update update);
+        ///Sets update mode of indicator if rotation should be handled (output)
+        void set_control_rotation_update(Update update);
+        ///Returns update mode of timeout (output)
+        Update get_timeout_update()                 const;
+        ///Returns update mode of target cartesian position (output)
+        Update get_target_position_update()         const;
+        ///Returns update mode of target cartesian orientation (output)
+        Update get_target_orientation_update()      const;
+        ///Returns update mode of translation stiffness matrix (output)
+        Update get_translation_stiffness_update()   const;
+        ///Returns update mode of rotation stiffness matrix (output)
+        Update get_rotation_stiffness_update()      const;
+        ///Returns update mode of translation damping matrix (output)
+        Update get_translation_damping_update()     const;
+        ///Returns update mode of translation damping matrix (output)
+        Update get_rotation_damping_update()        const;
+        ///Returns update mode of indicator if rotation should be handled (output)
+        Update get_control_rotation_update()        const;
 
-        ///Application mode of `timeout` field
-		Update timeout_update               = Update::if_not_late;
-        ///Application mode of `cartesian_target_position`
-		Update target_position_update       = Update::if_not_late;
-        ///Application mode of `cartesian_target_orientation`
-		Update target_orientation_update    = Update::if_not_late;
-        ///Application mode of `translation_stiffness`
-		Update translation_stiffness_update = Update::if_not_late;
-        ///Application mode of `rotation_stiffness`
-		Update rotation_stiffness_update    = Update::if_not_late;
-        ///Application mode of `translation_damping`
-		Update translation_damping_update   = Update::if_not_late;
-        ///Application mode of `rotation_damping`
-		Update rotation_damping_update      = Update::if_not_late;
-        ///Application mode of `control_rotation`
-        Update control_rotation_update      = Update::if_not_late;
+		///Returns torques sent to the robot (result)
+        Eigen::Matrix<double, 7, 1> get_joint_torques() const;
+        ///Returns if `send()` was called too late (result)
+		bool get_late() const;
+        ///Sets update mode of torques (result)
+        void set_joint_torques_update(Update update);
+        ///Returns update mode of torques (result)
+        Update get_joint_torques_update() const;
 
-		//Result
-        ///Torques sent to the robot, belongs to "result" group
-		Eigen::Matrix<double, 7, 1> joint_torques;
-        ///Application mode of `damping`
-        Update joint_torques_update         = Update::if_not_late;
-        ///Indicator if `send()` was called too late, belongs to "result" group
-		bool late                           = false;
-
-        ///Creates robot
+        ///Sets update mode to all output and result variables
+		void set_update(Update update);
+        
         ///@param ip IPv4 address of the robot
 		Robot(std::string ip);
         ///Starts cartesian controller
         void control_cartesian();
-        ///Sets update mode to all outputs
-        ///@param update Update mode to be set
-		void update(Update update);
-		///Waits for next signal and refreshes inputs
+		///Waits for next signal (if controller is running) and refreshes inputs
 		void receive();
 		///Sends signal back, updates outputs, refreshes results
 		void send();
@@ -95,6 +158,10 @@ namespace franka_real_time
 		void send_and_receive();
         ///Returns norm of distance between position and target
         double distance() const;
+        ///Iterates till the robot reaches target with given tolerance or till time expire
+        ///@param tolerance Norm of distance between position and target that can be tolerated
+        ///@param timeout Maximal time in milliseconds (number of iterations)
+        void loop(double tolerance, unsigned int timeout);
         ///Stops controller
         void stop();
 		///Destroys robot
