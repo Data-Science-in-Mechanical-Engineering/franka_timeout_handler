@@ -19,9 +19,12 @@ void franka_real_time::CartesianController::_calculate_joint_torques()
         Eigen::Matrix<double, 3, 1> orientation_error(orientation_error_quaternion.x(), orientation_error_quaternion.y(), orientation_error_quaternion.z());
         orientation_error = -_transform.linear() * orientation_error;
         cartesian_reaction.tail(3) = -_rotation_stiffness * orientation_error -_rotation_damping * _velocity_rotation.tail(3);
+        _joint_torques = _jacobian.transpose() * cartesian_reaction + _coriolis;  
     }
-
-    _joint_torques = _jacobian.transpose() * cartesian_reaction + _coriolis;  
+    else
+    {
+        _joint_torques = _rotation_correction * (_jacobian.transpose() * cartesian_reaction + _coriolis);
+    }
 }
 
 void franka_real_time::CartesianController::_control(const franka::RobotState &robot_state, franka::Torques *joint_torques_native)
@@ -168,9 +171,26 @@ void franka_real_time::CartesianController::_control(const franka::RobotState &r
     Eigen::Matrix<double, 7, 1>::Map(&joint_torques_native->tau_J[0]) = _joint_torques;
 }
 
+Eigen::Matrix<double, 7, 7> franka_real_time::CartesianController::_pseudoinverse(const Eigen::Matrix<double, 7, 7> &a, double epsilon)
+{
+    Eigen::BDCSVD<Eigen::Matrix<double, 7, 7>> svd(a, Eigen::ComputeThinU | Eigen::ComputeThinV);
+    svd.setThreshold(epsilon * std::max(a.cols(), a.rows()));
+    Eigen::Index rank = svd.rank();
+    Eigen::Matrix<double, 7, 7> tmp = svd.matrixU().leftCols(rank).adjoint();
+    tmp = svd.singularValues().head(rank).asDiagonal().inverse() * tmp;
+    return svd.matrixV().leftCols(rank) * tmp;
+}
+
 franka_real_time::CartesianController::CartesianController(Robot *robot)
 {
     _robot = robot;
+
+    //Init rotation correction
+    Eigen::Matrix<double, 7, 7> T;
+    T.setZero();
+    T.diagonal() << 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 1.0;
+    Eigen::Matrix<double, 7, 7> N = Eigen::Matrix<double, 7, 7>::Identity() - _pseudoinverse(T, 1e-4) * T;
+    _rotation_correction = N * _pseudoinverse(N, 1e-4);
 
     //Init outputs
     const double translational_stiffness_constant = 150.0;
