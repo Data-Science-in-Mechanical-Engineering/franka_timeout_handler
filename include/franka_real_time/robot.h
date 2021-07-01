@@ -62,6 +62,8 @@ namespace franka_real_time
 		Eigen::Matrix<double, 3, 1> get_position()          const;
         ///Returns cartesian orientation (input)
 		Eigen::Quaterniond get_orientation()                const;
+        ///Returns cartesian orientation in Euler angles: roll, pitch, yaw (input)
+        Eigen::Matrix<double, 3, 1> get_orientation_euler() const;
 		///Returns cartesian velocity (input)
 		Eigen::Matrix<double, 3, 1> get_velocity()          const;
         ///Returns cartesian rotation (input)
@@ -73,6 +75,8 @@ namespace franka_real_time
         void set_target_position(Eigen::Matrix<double, 3, 1> position);
         ///Sets cartesian orientation of tartget (output)
         void set_target_orientation(Eigen::Quaterniond orientation);
+        ///Sets cartesian orientation of target in Euler angles: roll, pitch, yaw (output)
+        void set_target_orientation_euler(Eigen::Matrix<double, 3, 1> euler);
         ///Sets translation stiffness matrix (output)
         void set_translation_stiffness(Eigen::Matrix<double, 3, 3> stiffness);
         ///Sets rotation stiffness matrix (output)
@@ -84,21 +88,23 @@ namespace franka_real_time
         ///Sets indicator if rotation should be handled (output)
         void set_control_rotation(bool control);
         ///Returns timeout in microsencods (output)
-        unsigned int get_timeout()                              const;
+        unsigned int get_timeout()                                  const;
         ///Returns cartesian position of tartget (output)
-        Eigen::Matrix<double, 3, 1> get_target_position()       const;
+        Eigen::Matrix<double, 3, 1> get_target_position()           const;
         ///Returns cartesian orientation of tartget (output)
-        Eigen::Quaterniond get_target_orientation()             const;
+        Eigen::Quaterniond get_target_orientation()                 const;
+        ///Returns cartesian orientation of target in Euler angles: roll, pitch, yaw (output)
+        Eigen::Matrix<double, 3, 1> get_target_orientation_euler()  const;
         ///Returns translation stiffness matrix (output)
-        Eigen::Matrix<double, 3, 3> get_translation_stiffness() const;
+        Eigen::Matrix<double, 3, 3> get_translation_stiffness()     const;
         ///Returns rotation stiffness matrix (output)
-        Eigen::Matrix<double, 3, 3> get_rotation_stiffness()    const;
+        Eigen::Matrix<double, 3, 3> get_rotation_stiffness()        const;
         ///Returns translation damping matrix (output)
-        Eigen::Matrix<double, 3, 3> get_translation_damping()   const;
+        Eigen::Matrix<double, 3, 3> get_translation_damping()       const;
         ///Returns translation damping matrix (output)
-        Eigen::Matrix<double, 3, 3> get_rotation_damping()      const;
+        Eigen::Matrix<double, 3, 3> get_rotation_damping()          const;
         ///Returns indicator if rotation should be handled (output)
-        bool get_control_rotation()                             const;
+        bool get_control_rotation()                                 const;
         ///Sets update mode of timeout (output)
         void set_timeout_update(Update update);
         ///Sets update mode of target cartesian position (output)

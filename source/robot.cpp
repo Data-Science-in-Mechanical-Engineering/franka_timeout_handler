@@ -21,6 +21,11 @@ Eigen::Quaterniond franka_real_time::Robot::get_orientation() const
     return _orientation;
 }
 
+Eigen::Matrix<double, 3, 1> franka_real_time::Robot::get_orientation_euler() const
+{
+    return _orientation.toRotationMatrix().eulerAngles(0, 1, 2);
+}
+
 Eigen::Matrix<double, 3, 1> franka_real_time::Robot::get_velocity() const
 {
     return _velocity;
@@ -44,6 +49,11 @@ void franka_real_time::Robot::set_target_position(Eigen::Matrix<double, 3, 1> po
 void franka_real_time::Robot::set_target_orientation(Eigen::Quaterniond orientation)
 {
     _orientation = orientation;
+}
+
+void franka_real_time::Robot::set_target_orientation_euler(Eigen::Matrix<double, 3, 1> euler)
+{
+    _orientation = Eigen::AngleAxisd(euler(2), Eigen::Vector3d::UnitZ()) * Eigen::AngleAxisd(euler(1), Eigen::Vector3d::UnitY()) * Eigen::AngleAxisd(euler(0), Eigen::Vector3d::UnitX());
 }
 
 void franka_real_time::Robot::set_translation_stiffness(Eigen::Matrix<double, 3, 3> stiffness)
@@ -84,6 +94,11 @@ Eigen::Matrix<double, 3, 1> franka_real_time::Robot::get_target_position() const
 Eigen::Quaterniond franka_real_time::Robot::get_target_orientation() const
 {
     return _target_orientation;
+}
+
+Eigen::Matrix<double, 3, 1> franka_real_time::Robot::get_target_orientation_euler() const
+{
+    return _target_orientation.toRotationMatrix().eulerAngles(0, 1, 2);
 }
 
 Eigen::Matrix<double, 3, 3> franka_real_time::Robot::get_translation_stiffness() const
