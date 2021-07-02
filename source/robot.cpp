@@ -305,11 +305,25 @@ double franka_real_time::Robot::distance() const
     return error.norm();
 }
 
+void franka_real_time::Robot::loop(double tolerance, unsigned int timeout)
+{
+    for (unsigned int i = 0; i < timeout; i++)
+    {
+        if (distance() <= tolerance) break;
+    }
+}
+
 void franka_real_time::Robot::stop()
 {
     if (_controller == nullptr) throw std::runtime_error("franka_real_time: no controller was started");
     delete _controller;
     _controller = nullptr;
+}
+
+void franka_real_time::Robot::reset()
+{
+    stop();
+    control_cartesian();
 }
 
 franka_real_time::Robot::~Robot()

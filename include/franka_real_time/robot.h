@@ -170,6 +170,8 @@ namespace franka_real_time
         void loop(double tolerance, unsigned int timeout);
         ///Stops controller
         void stop();
+        ///Stops and starts controller of same type
+        void reset();
 		///Destroys robot
 		~Robot();
 	};

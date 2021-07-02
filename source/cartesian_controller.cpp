@@ -173,10 +173,10 @@ void franka_real_time::CartesianController::_control(const franka::RobotState &r
 
 Eigen::Matrix<double, 7, 7> franka_real_time::CartesianController::_pseudoinverse(const Eigen::Matrix<double, 7, 7> &a, double epsilon)
 {
-    Eigen::BDCSVD<Eigen::Matrix<double, 7, 7>> svd(a, Eigen::ComputeThinU | Eigen::ComputeThinV);
+    Eigen::BDCSVD<Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic>> svd(a, Eigen::ComputeThinU | Eigen::ComputeThinV);
     svd.setThreshold(epsilon * std::max(a.cols(), a.rows()));
     Eigen::Index rank = svd.rank();
-    Eigen::Matrix<double, 7, 7> tmp = svd.matrixU().leftCols(rank).adjoint();
+    Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> tmp = svd.matrixU().leftCols(rank).adjoint();
     tmp = svd.singularValues().head(rank).asDiagonal().inverse() * tmp;
     return svd.matrixV().leftCols(rank) * tmp;
 }
@@ -188,9 +188,10 @@ franka_real_time::CartesianController::CartesianController(Robot *robot)
     //Init rotation correction
     Eigen::Matrix<double, 7, 7> T;
     T.setZero();
-    T.diagonal() << 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 1.0;
-    Eigen::Matrix<double, 7, 7> N = Eigen::Matrix<double, 7, 7>::Identity() - _pseudoinverse(T, 1e-4) * T;
-    _rotation_correction = N * _pseudoinverse(N, 1e-4);
+    T.diagonal() << 0.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0;
+    _rotation_correction = Eigen::Matrix<double, 7, 7>::Identity() - T;
+    //Eigen::Matrix<double, 7, 7> N = Eigen::Matrix<double, 7, 7>::Identity() - _pseudoinverse(T, 1e-4) * T;
+    //_rotation_correction = N * _pseudoinverse(N, 1e-4);
 
     //Init outputs
     const double translational_stiffness_constant = 150.0;
@@ -233,6 +234,11 @@ franka_real_time::CartesianController::CartesianController(Robot *robot)
         });
         return nullptr;
     }, this) != 0) throw std::runtime_error("franka_real_time: pthread_create failed");
+}
+
+franka_real_time::Controller::Type franka_real_time::CartesianController::typ() const
+{
+    return Controller::Type::cartesian;
 }
 
 void franka_real_time::CartesianController::receive()

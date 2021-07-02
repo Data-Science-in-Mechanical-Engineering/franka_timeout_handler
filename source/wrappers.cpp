@@ -67,5 +67,6 @@ PYBIND11_MODULE(franka_real_time, m)
 		.def("send_and_receive",                    &franka_real_time::Robot::send_and_receive)
         .def("distance",                            &franka_real_time::Robot::distance)
         .def("loop",                                &franka_real_time::Robot::loop)
-        .def("stop",                                &franka_real_time::Robot::stop);
+        .def("stop",                                &franka_real_time::Robot::stop)
+        .def("reset",                               &franka_real_time::Robot::reset);
 }
