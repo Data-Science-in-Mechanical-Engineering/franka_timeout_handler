@@ -244,7 +244,7 @@ franka_real_time::Robot::Robot(std::string ip) : _robot(ip)
     _model = new franka::Model(_robot.loadModel());
 }
 
-void franka_real_time::Robot::control_cartesian()
+void franka_real_time::Robot::start()
 {
     _controller = new CartesianController(this);
 }
@@ -323,7 +323,7 @@ void franka_real_time::Robot::stop()
 void franka_real_time::Robot::reset()
 {
     stop();
-    control_cartesian();
+    start();
 }
 
 franka_real_time::Robot::~Robot()

@@ -33,12 +33,13 @@ robot.send();
 printf(robot.late ? "Late" : "Not late");
 ```
 
-Fields of `Robot` class can be divided in three groups:
- - Input: fields are refreshed with `receive()` (positions, velocities, etc.)
- - Output: fields are applied with `send()` (stiffness, damping, etc.)
- - Result: fileds are refreshed with `send()` (torques and lateness indicator)
+Fields of `Robot` class can be divided in three groups:
 
-Currently there exists only one controller: `CartesianController`, which makes the robot stand in given cartesian position.
+ - Input: fields are refreshed with `receive()` (positions, velocities, etc.)
+
+ - Output: fields are applied with `send()` (stiffness, damping, etc.)
+
+ - Result: fileds are refreshed with `send()` (torques and lateness indicator)
 
 ### Dependencies
 The library depends on:

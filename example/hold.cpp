@@ -10,7 +10,7 @@ int _main(int argc, char **argv)
     }
 
     franka_real_time::Robot robot(argv[1]);
-    robot.control_cartesian();
+    robot.start();
     
     robot.receive();
     robot.set_target_position(robot.get_position());

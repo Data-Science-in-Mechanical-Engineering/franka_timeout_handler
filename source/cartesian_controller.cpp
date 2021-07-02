@@ -236,11 +236,6 @@ franka_real_time::CartesianController::CartesianController(Robot *robot)
     }, this) != 0) throw std::runtime_error("franka_real_time: pthread_create failed");
 }
 
-franka_real_time::Controller::Type franka_real_time::CartesianController::typ() const
-{
-    return Controller::Type::cartesian;
-}
-
 void franka_real_time::CartesianController::receive()
 {
     pthread_mutex_lock(&_mutex);

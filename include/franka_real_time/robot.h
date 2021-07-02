@@ -21,6 +21,7 @@ namespace franka_real_time
         franka::Model *_model = nullptr;
         Controller *_controller = nullptr;
 
+
         //Input
         Eigen::Matrix<double, 7, 1> _joint_positions;
         Eigen::Matrix<double, 7, 1> _joint_velocities;
@@ -152,8 +153,8 @@ namespace franka_real_time
         
         ///@param ip IPv4 address of the robot
 		Robot(std::string ip);
-        ///Starts cartesian controller
-        void control_cartesian();
+        ///Starts controller
+        void start();
 		///Waits for next signal (if controller is running) and refreshes inputs
 		void receive();
 		///Sends signal back, updates outputs, refreshes results
@@ -170,7 +171,7 @@ namespace franka_real_time
         void loop(double tolerance, unsigned int timeout);
         ///Stops controller
         void stop();
-        ///Stops and starts controller of same type
+        ///Stops and starts controller
         void reset();
 		///Destroys robot
 		~Robot();
@@ -211,8 +212,6 @@ Fields of `Robot` class can be divided in three groups:
  - Input: fields are refreshed with `receive()` (positions, velocities, etc.)
  - Output: fields are applied with `send()` (stiffness, damping, etc.)
  - Result: fileds are refreshed with `send()` (torques and lateness indicator)
-
-Currently there exists only one controller: `CartesianController`, which makes the robot stand in given cartesian position.
 
 @section Dependencies
 The library depends on:

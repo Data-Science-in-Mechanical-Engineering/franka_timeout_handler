@@ -14,7 +14,6 @@ namespace franka_real_time
             cartesian
         };
 
-        virtual Type typ() const        = 0;
         virtual void receive()          = 0;
 		virtual void send()             = 0;
 		virtual void receive_and_send() = 0;

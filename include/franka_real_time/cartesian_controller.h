@@ -83,7 +83,6 @@ namespace franka_real_time
         Eigen::Matrix<double, 7, 7> _pseudoinverse(const Eigen::Matrix<double, 7, 7> &a, double epsilon);
 
 		CartesianController(Robot *robot);
-        virtual Type typ() const;
         virtual void receive();
 		virtual void send();
 		virtual void receive_and_send();
