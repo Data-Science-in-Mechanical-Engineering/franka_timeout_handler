@@ -15,18 +15,27 @@ namespace franka_real_time
 	{
     friend Robot;
     private:
-        Robot *_robot           = nullptr;
+        enum class ReceiveState
+        {
+            other,
+            receive,
+            post_receive,
+            receive_and_send,
+            destructor
+        };
+
+        enum class SendState
+        {
+            other,
+            pre_wait,
+            wait,
+            post_wait
+        };
 
         //States
-        bool _front_resending   = false; //Set by front, indicated receive_and_send() is running
-        bool _front_receiving   = false; //Set by front, indicates receive() is running
-        bool _front_received    = false; //Set by front, indicates that front called receive()
-
-        bool _back_receiving    = false; //Set by back, indicates thread_cond_timedwait() was called
-        bool _back_received     = false; //Set by front, indicates front has arrived
-        bool _back_timeout      = false; //Set by back, indicated front has not arrived
-
-        bool _finish            = false;
+        ReceiveState _receive_state = ReceiveState::other;
+        SendState _send_state       = SendState::other;
+        Robot *_robot               = nullptr;
         
         //Calculation
         Eigen::Matrix<double, 7, 1> _joint_positions;
@@ -50,6 +59,7 @@ namespace franka_real_time
         bool _control_rotation;
         
         Eigen::Matrix<double, 7, 1> _joint_torques;
+        bool _joint_torques_finished;
 
         //Buffer for laties
         unsigned int _late_timeout;
@@ -69,7 +79,6 @@ namespace franka_real_time
         bool _late_control_rotation;
         bool _late_update_control_rotation      = false;
 
-
         Eigen::Matrix<double, 7, 1> _late_joint_torques;
 
         //Technical
@@ -78,8 +87,19 @@ namespace franka_real_time
         pthread_mutex_t _mutex              = PTHREAD_MUTEX_INITIALIZER;
         pthread_t _backend_thread;
 
-        void _calculate_joint_torques();
-        void _control(const franka::RobotState &robot_state, franka::Torques *joint_torques_array);
+        void _state_to_input(const franka::RobotState &robot_state);
+        void _input_to_robot_input();
+        void _calculate_temporary(const franka::RobotState &robot_state);
+        void _robot_output_to_output();
+        void _calculate_result();
+        void _result_to_robot_result();
+
+        void _robot_output_to_late_output();
+        void _late_output_to_output();
+        void _result_to_late_result();
+        void _late_result_to_robot_result();
+
+        void _control(const franka::RobotState &robot_state);
         Eigen::Matrix<double, 7, 7> _pseudoinverse(const Eigen::Matrix<double, 7, 7> &a, double epsilon);
 
 		CartesianController(Robot *robot);

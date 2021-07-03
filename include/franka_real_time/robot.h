@@ -21,7 +21,6 @@ namespace franka_real_time
         franka::Model *_model = nullptr;
         Controller *_controller = nullptr;
 
-
         //Input
         Eigen::Matrix<double, 7, 1> _joint_positions;
         Eigen::Matrix<double, 7, 1> _joint_velocities;
@@ -55,6 +54,23 @@ namespace franka_real_time
 		bool _late                           = false;
 
 	public:
+        //Basic:
+        ///@param ip IPv4 address of the robot
+		Robot(std::string ip);
+        ///Starts controller
+        void start();
+        ///Stops controller
+        void stop();
+		///Waits for next signal (if controller is running) and refreshes inputs
+		void receive();
+		///Sends signal back, updates outputs, refreshes results
+		void send();
+		///Waits for signal and immediately sends signal back with no chance to be late, refreshes inputs and results, updates outputs
+		void receive_and_send();
+		///Sends signal back and waits for new signal, updates outputs, refreshes results and then inputs
+		void send_and_receive();       
+
+        //Input:
         ///Returns joint positions (input)
 		Eigen::Matrix<double, 7, 1> get_joint_positions()   const;
         ///Returns joint velocities (input)
@@ -70,6 +86,7 @@ namespace franka_real_time
         ///Returns cartesian rotation (input)
 		Eigen::Matrix<double, 3, 1> get_rotation()          const;
 
+        //Output:
         ///Sets timeout in microsencods (output)
         void set_timeout(unsigned int timeout);
         ///Sets cartesian position of tartget (output)
@@ -139,6 +156,7 @@ namespace franka_real_time
         ///Returns update mode of indicator if rotation should be handled (output)
         Update get_control_rotation_update()        const;
 
+        //Result:
 		///Returns torques sent to the robot (result)
         Eigen::Matrix<double, 7, 1> get_joint_torques() const;
         ///Returns if `send()` was called too late (result)
@@ -148,31 +166,18 @@ namespace franka_real_time
         ///Returns update mode of torques (result)
         Update get_joint_torques_update() const;
 
+        //Utilities:
         ///Sets update mode to all output and result variables
 		void set_update(Update update);
-        
-        ///@param ip IPv4 address of the robot
-		Robot(std::string ip);
-        ///Starts controller
-        void start();
-		///Waits for next signal (if controller is running) and refreshes inputs
-		void receive();
-		///Sends signal back, updates outputs, refreshes results
-		void send();
-		///Waits for signal and immediately sends signal back with no chance to be late, refreshes inputs and results, updates outputs
-		void receive_and_send();
-		///Sends signal back and waits for new signal, updates outputs, refreshes results and then inputs
-		void send_and_receive();
+        ///Sets all output values to default
+        void set_default();
         ///Returns norm of distance between position and target
         double distance() const;
         ///Iterates till the robot reaches target with given tolerance or till time expire
         ///@param tolerance Norm of distance between position and target that can be tolerated
         ///@param timeout Maximal time in milliseconds (number of iterations)
         void loop(double tolerance, unsigned int timeout);
-        ///Stops controller
-        void stop();
-        ///Stops and starts controller
-        void reset();
+        
 		///Destroys robot
 		~Robot();
 	};

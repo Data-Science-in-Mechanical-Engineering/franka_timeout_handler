@@ -2,7 +2,45 @@
 #include "../include/franka_real_time/robot.h"
 #include <stdexcept>
 
-void franka_real_time::CartesianController::_calculate_joint_torques()
+void franka_real_time::CartesianController::_state_to_input(const franka::RobotState &robot_state)
+{
+    _joint_positions = Eigen::Matrix<double, 7, 1>::Map(robot_state.q.data());
+    _joint_velocities = Eigen::Matrix<double, 7, 1>::Map(robot_state.dq.data());
+    _transform = Eigen::Matrix<double, 4, 4>::Map(robot_state.O_T_EE.data());
+    _position = _transform.translation();
+    _orientation = _transform.linear();
+    _jacobian = Eigen::Matrix<double, 6, 7>::Map(_robot->_model->zeroJacobian(franka::Frame::kEndEffector, robot_state).data());
+    _velocity_rotation = _jacobian * _joint_velocities;
+}
+
+void franka_real_time::CartesianController::_input_to_robot_input()
+{
+    _robot->_joint_positions = _joint_positions;
+    _robot->_joint_velocities = _joint_velocities;
+    _robot->_position = _position;
+    _robot->_orientation = _orientation;
+    _robot->_velocity = _velocity_rotation.head(3);
+    _robot->_rotation = _velocity_rotation.tail(3);
+}
+
+void franka_real_time::CartesianController::_calculate_temporary(const franka::RobotState &robot_state)
+{
+    _coriolis = Eigen::Matrix<double, 7, 1>::Map(_robot->_model->coriolis(robot_state).data());
+}
+
+void franka_real_time::CartesianController::_robot_output_to_output()
+{
+    if (_robot->_update_timeout != Update::no) _timeout = _robot->_timeout;
+    if (_robot->_update_target_position != Update::no) _target_position = _robot->_target_position;
+    if (_robot->_update_target_orientation != Update::no) _target_orientation = _robot->_target_orientation;
+    if (_robot->_update_translation_stiffness != Update::no) _translation_stiffness = _robot->_translation_stiffness;
+    if (_robot->_update_rotation_stiffness != Update::no) _rotation_stiffness = _robot->_rotation_stiffness;
+    if (_robot->_update_translation_damping != Update::no) _translation_damping = _robot->_translation_damping;
+    if (_robot->_update_rotation_damping != Update::no) _rotation_damping = _robot->_rotation_damping;
+    if (_robot->_update_control_rotation != Update::no) _control_rotation = _robot->_control_rotation;
+}
+
+void franka_real_time::CartesianController::_calculate_result()
 {
     Eigen::Matrix<double, 6, 1> cartesian_reaction;
     cartesian_reaction.setZero();
@@ -27,148 +65,134 @@ void franka_real_time::CartesianController::_calculate_joint_torques()
     }
 }
 
-void franka_real_time::CartesianController::_control(const franka::RobotState &robot_state, franka::Torques *joint_torques_native)
+void franka_real_time::CartesianController::_result_to_robot_result()
+{
+    if (_robot->_update_joint_torques != Update::no) _robot->_joint_torques = _joint_torques;
+}
+
+void franka_real_time::CartesianController::_robot_output_to_late_output()
+{
+    if (_robot->_update_timeout == Update::yes) { _late_timeout = _robot->_timeout; _late_update_timeout = true; }
+    if (_robot->_update_target_position == Update::yes) { _late_target_position = _robot->_target_position; _late_update_target_position = true; }
+    if (_robot->_update_target_orientation == Update::yes) { _late_target_orientation = _robot->_target_orientation; _late_update_target_orientation = true; }
+    if (_robot->_update_translation_stiffness == Update::yes) { _late_translation_stiffness = _robot->_translation_stiffness; _late_update_translation_stiffness = true; }
+    if (_robot->_update_rotation_stiffness == Update::yes) { _late_rotation_stiffness = _robot->_rotation_stiffness; _late_update_rotation_stiffness = true; }
+    if (_robot->_update_translation_damping == Update::yes) { _late_translation_damping = _robot->_translation_damping; _late_update_translation_damping = true; }
+    if (_robot->_update_rotation_damping == Update::yes) { _late_rotation_damping = _robot->_rotation_damping; _late_update_rotation_damping = true; }
+    if (_robot->_update_control_rotation == Update::yes) { _late_control_rotation = _robot->_control_rotation; _late_update_control_rotation = true; }
+}
+
+void franka_real_time::CartesianController::_late_output_to_output()
+{
+    if (_late_update_timeout) { _timeout = _late_timeout; _late_update_timeout = false; }
+    if (_late_update_target_position) { _target_position = _late_target_position; _late_update_target_position = false; }
+    if (_late_update_target_orientation) { _target_orientation = _late_target_orientation; _late_update_target_orientation = false; }
+    if (_late_update_translation_stiffness) { _translation_stiffness = _late_translation_stiffness; _late_update_translation_stiffness = false; }
+    if (_late_update_rotation_stiffness) { _rotation_stiffness = _late_rotation_stiffness; _late_update_rotation_stiffness = false; }
+    if (_late_update_translation_damping) { _translation_damping = _late_translation_damping; _late_update_translation_damping = false; }
+    if (_late_update_rotation_damping) { _rotation_damping = _late_rotation_damping; _late_update_rotation_damping = false; }
+    if (_late_update_control_rotation) { _control_rotation = _late_control_rotation; _late_update_control_rotation = false; }
+}
+
+void franka_real_time::CartesianController::_result_to_late_result()
+{
+    _late_joint_torques = _joint_torques;
+}
+
+void franka_real_time::CartesianController::_late_result_to_robot_result()
+{
+    if (_robot->_update_joint_torques == Update::yes) _robot->_joint_torques = _joint_torques;
+}
+
+void franka_real_time::CartesianController::_control(const franka::RobotState &robot_state)
 {
     //Setting backend inputs
-    _joint_positions = Eigen::Matrix<double, 7, 1>::Map(robot_state.q.data());
-    _joint_velocities = Eigen::Matrix<double, 7, 1>::Map(robot_state.dq.data());
-    _transform = Eigen::Matrix<double, 4, 4>::Map(robot_state.O_T_EE.data());
-    _position = _transform.translation();
-    _orientation = _transform.linear();
-    _jacobian = Eigen::Matrix<double, 6, 7>::Map(_robot->_model->zeroJacobian(franka::Frame::kEndEffector, robot_state).data());
-    _velocity_rotation = _jacobian * _joint_velocities;
+    _state_to_input(robot_state);
 
-    //Receive
-    bool front_received = false;
-    bool front_resended = false;
+    //Receive, receive_and_send or ~Robot
     pthread_mutex_lock(&_mutex);
+    ReceiveState receive_state = _receive_state;
+    _late_output_to_output();
+    if (_receive_state == ReceiveState::receive)
     {
-        //Copying late outputs to backend outputs
-        if (_late_update_timeout) { _timeout = _late_timeout; _late_update_timeout = false; }
-        if (_late_update_target_position) { _target_position = _late_target_position; _late_update_target_position = false; }
-        if (_late_update_target_orientation) { _target_orientation = _late_target_orientation; _late_update_target_orientation = false; }
-        if (_late_update_translation_stiffness) { _translation_stiffness = _late_translation_stiffness; _late_update_translation_stiffness = false; }
-        if (_late_update_rotation_stiffness) { _rotation_stiffness = _late_rotation_stiffness; _late_update_rotation_stiffness = false; }
-        if (_late_update_translation_damping) { _translation_damping = _late_translation_damping; _late_update_translation_damping = false; }
-        if (_late_update_rotation_damping) { _rotation_damping = _late_rotation_damping; _late_update_rotation_damping = false; }
-        if (_late_update_control_rotation) { _control_rotation = _late_control_rotation; _late_update_control_rotation = false; }
-
-        //Copying finish (it must be in receive, but receive is not done in destructor)
-        joint_torques_native->motion_finished = _finish;
-
-        if (_front_receiving)
-        {
-            //Copying backend inputs to frontend inputs and signaling
-            front_received = true;
-            _front_received = true;
-            _back_receiving = false;
-            _back_received = false;
-            _back_timeout = false;
-            _robot->_joint_positions = _joint_positions;
-            _robot->_joint_velocities = _joint_velocities;
-            _robot->_position = _position;
-            _robot->_orientation = _orientation;
-            _robot->_velocity = _velocity_rotation.head(3);
-            _robot->_rotation = _velocity_rotation.tail(3);
-            pthread_cond_signal(&_receive_condition);
-        }
-        else if (_front_resending)
-        {
-            //Copying backend inputs to frontend inputs, copying frontend outputs to backend outputs, copying result to frontend result, and signaling
-            front_resended = true;
-            _robot->_joint_positions = _joint_positions;
-            _robot->_joint_velocities = _joint_velocities;
-            _robot->_position = _position;
-            _robot->_orientation = _orientation;
-            _robot->_velocity = _velocity_rotation.head(3);
-            _robot->_rotation = _velocity_rotation.tail(3);
-
-            if (_robot->_update_timeout != Update::no) _timeout = _robot->_timeout;
-            if (_robot->_update_target_position != Update::no) _target_position = _robot->_target_position;
-            if (_robot->_update_target_orientation != Update::no) _target_orientation = _robot->_target_orientation;
-            if (_robot->_update_translation_stiffness != Update::no) _translation_stiffness = _robot->_translation_stiffness;
-            if (_robot->_update_rotation_stiffness != Update::no) _rotation_stiffness = _robot->_rotation_stiffness;
-            if (_robot->_update_translation_damping != Update::no) _translation_damping = _robot->_translation_damping;
-            if (_robot->_update_rotation_damping != Update::no) _rotation_damping = _robot->_rotation_damping;
-            if (_robot->_update_control_rotation != Update::no) _control_rotation = _robot->_control_rotation;
-
-            _coriolis = Eigen::Matrix<double, 7, 1>::Map(_robot->_model->coriolis(robot_state).data());
-            _calculate_joint_torques();
-            if (_robot->_update_joint_torques != Update::no) _robot->_joint_torques = _joint_torques;
-            _robot->_late = false;
-
-            pthread_cond_signal(&_receive_condition);
-        }
+        //Set input
+        _send_state = SendState::pre_wait;
+        _input_to_robot_input();
+        pthread_cond_signal(&_receive_condition);
+    }
+    else if (_receive_state == ReceiveState::receive_and_send || _receive_state == ReceiveState::destructor)
+    {
+        //Full cycle here
+        _send_state = SendState::other;
+        _input_to_robot_input();
+        _calculate_temporary(robot_state);
+        _robot_output_to_output();
+        _calculate_result();
+        _result_to_robot_result();
+        _robot->_late = false;
+        pthread_cond_signal(&_receive_condition);
+    }
+    else
+    {
+        _send_state = SendState::other;
     }
     pthread_mutex_unlock(&_mutex);
-    
-    if (!front_resended)
-    {
-        //Calculating everything possible without outputs
-        //Only one lonely coriolis here...
-        _coriolis = Eigen::Matrix<double, 7, 1>::Map(_robot->_model->coriolis(robot_state).data());
 
-        if (!front_received)
+    //Deciding between receive variants
+    if (receive_state == ReceiveState::receive)
+    {
+        //Robot::receive() was called, waiting for send() and calculating torques
+        _calculate_temporary(robot_state);
+
+        pthread_mutex_lock(&_mutex);
+        if (_send_state == SendState::wait)
         {
-            //No send
-            //Calculating
-            _calculate_joint_torques();
+            //Scenario 1: Frontend arrived before backend started to wait
+            _robot_output_to_output();
+            _calculate_result();        
+            _result_to_robot_result();
+            _robot->_late = false;
+            pthread_cond_signal(&_send_condition);
         }
         else
         {
-            //Send
-            pthread_mutex_lock(&_mutex);
+            _send_state = SendState::wait;
+            timespec time;
+            time.tv_sec = 0;
+            time.tv_nsec = 1000 * _timeout;
+            pthread_cond_timedwait(&_send_condition, &_mutex, &time);
+            if (_send_state == SendState::post_wait)
             {
-                if (_back_received)
-                {
-                    //Copying frontend outputs to backend outputs
-                    if (_robot->_update_timeout != Update::no) _timeout = _robot->_timeout;
-                    if (_robot->_update_target_position != Update::no) _target_position = _robot->_target_position;
-                    if (_robot->_update_target_orientation != Update::no) _target_orientation = _robot->_target_orientation;
-                    if (_robot->_update_translation_stiffness != Update::no) _translation_stiffness = _robot->_translation_stiffness;
-                    if (_robot->_update_rotation_stiffness != Update::no) _rotation_stiffness = _robot->_rotation_stiffness;
-                    if (_robot->_update_translation_damping != Update::no) _translation_damping = _robot->_translation_damping;
-                    if (_robot->_update_rotation_damping != Update::no) _rotation_damping = _robot->_rotation_damping;
-                    if (_robot->_update_control_rotation != Update::no) _control_rotation = _robot->_control_rotation;
-
-                    //Calculating the rest
-                    _calculate_joint_torques();
-
-                    //Setting results
-                   if (_robot->_update_joint_torques != Update::no) _robot->_joint_torques = _joint_torques;
-                    _robot->_late = false;
-
-                    //Signaling
-                    pthread_cond_signal(&_send_condition);
-                }
-                else
-                {
-                    _back_receiving = true;
-                    timespec time;
-                    time.tv_sec = 0;
-                    time.tv_nsec = 1000 * _timeout;
-                    pthread_cond_timedwait(&_send_condition, &_mutex, &time);
-
-                    if (_back_received)
-                    {
-                        //Everything already done by frontend
-                    }
-                    else
-                    {
-                        _back_timeout = true;
-
-                        //Calculating the rest
-                        _calculate_joint_torques();
-
-                        //Setting late results
-                        _late_joint_torques = _joint_torques;
-                    }
-                }
+                //Scenario 2: Frontend arrived when backend waited it
             }
-            pthread_mutex_unlock(&_mutex);
+            else
+            {
+                //Scenario 3: Frontend did not arrive
+                _send_state = SendState::post_wait;
+                _calculate_result();
+                _result_to_late_result();
+            }
         }
+        pthread_mutex_unlock(&_mutex);
+        _joint_torques_finished = false;
     }
-    Eigen::Matrix<double, 7, 1>::Map(&joint_torques_native->tau_J[0]) = _joint_torques;
+    else if (receive_state == ReceiveState::receive_and_send)
+    {
+        //Robot::receive_and_send() was called, torques are already calculated
+        _joint_torques_finished = false;
+    }
+    else if (receive_state == ReceiveState::destructor)
+    {
+        //Robot::~Robot() was called, torques are already calculated
+        _joint_torques_finished = true;
+    }
+    else
+    {
+        //No receive was called, calculating torques
+        _calculate_temporary(robot_state);
+        _calculate_result();
+        _joint_torques_finished = false;
+    }
 }
 
 Eigen::Matrix<double, 7, 7> franka_real_time::CartesianController::_pseudoinverse(const Eigen::Matrix<double, 7, 7> &a, double epsilon)
@@ -194,25 +218,8 @@ franka_real_time::CartesianController::CartesianController(Robot *robot)
     //_rotation_correction = N * _pseudoinverse(N, 1e-4);
 
     //Init outputs
-    const double translational_stiffness_constant = 150.0;
-    const double rotational_stiffness_constant = 10.0;
-    _timeout = 200;
-    _target_position = _robot->_position;
-    _target_orientation = _robot->_orientation;
-    _translation_stiffness = translational_stiffness_constant * Eigen::Matrix<double, 3, 3>::Identity();
-    _rotation_stiffness = rotational_stiffness_constant * Eigen::Matrix<double, 3, 3>::Identity();
-    _translation_damping = 2.0 * sqrt(translational_stiffness_constant) * Eigen::Matrix<double, 3, 3>::Identity();
-    _rotation_damping = 2.0 * sqrt(rotational_stiffness_constant) * Eigen::Matrix<double, 3, 3>::Identity();
-    _control_rotation = true;
-    _robot->_timeout = _timeout;
-    _robot->_target_position = _target_position;
-    _robot->_target_orientation = _target_orientation;
-    _robot->_translation_stiffness = _translation_stiffness;
-    _robot->_rotation_stiffness = _rotation_stiffness;
-    _robot->_translation_damping = _translation_damping;
-    _robot->_rotation_damping = _rotation_damping;
-    _robot->_control_rotation = _control_rotation;
-
+    _robot_output_to_output();
+    
     //Technical
     if (pthread_cond_init(&_receive_condition, nullptr) != 0) throw std::runtime_error("franka_real_time: pthread_cond_init failed");
     if (pthread_cond_init(&_send_condition, nullptr) != 0) throw std::runtime_error("franka_real_time: pthread_cond_init failed");
@@ -221,16 +228,18 @@ franka_real_time::CartesianController::CartesianController(Robot *robot)
     if (pthread_attr_init(&pthread_attributes) != 0) throw std::runtime_error("franka_real_time: pthread_attr_init failed");;
     if (pthread_attr_setschedpolicy(&pthread_attributes, SCHED_FIFO) != 0) throw std::runtime_error("franka_real_time: pthread_attr_setschedpolicy failed");
     sched_param scheduling_parameters;
-    scheduling_parameters.sched_priority = 98;
+    scheduling_parameters.sched_priority = 90;
     if (pthread_attr_setschedparam(&pthread_attributes, &scheduling_parameters) != 0) throw std::runtime_error("franka_real_time: pthread_attr_setschedparam failed");;;
     if (pthread_attr_setinheritsched(&pthread_attributes, PTHREAD_EXPLICIT_SCHED) != 0) throw std::runtime_error("franka_real_time: pthread_attr_setinheritsched failed");;;
     if (pthread_create(&_backend_thread, &pthread_attributes, [](void* controller) -> void*
     {
         ((CartesianController*)controller)->_robot->_robot.control([controller](const franka::RobotState &robot_state, franka::Duration duration) -> franka::Torques
         {
-            franka::Torques joint_torques_native{0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
-            ((CartesianController*)controller)->_control(robot_state, &joint_torques_native);
-            return joint_torques_native;
+            ((CartesianController*)controller)->_control(robot_state);
+            franka::Torques joint_torques{0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
+            Eigen::Matrix<double, 7, 1>::Map(&joint_torques.tau_J[0]) = ((CartesianController*)controller)->_joint_torques;
+            joint_torques.motion_finished = ((CartesianController*)controller)->_joint_torques_finished;
+            return joint_torques;
         });
         return nullptr;
     }, this) != 0) throw std::runtime_error("franka_real_time: pthread_create failed");
@@ -239,78 +248,55 @@ franka_real_time::CartesianController::CartesianController(Robot *robot)
 void franka_real_time::CartesianController::receive()
 {
     pthread_mutex_lock(&_mutex);
-    _front_receiving = true;
+    _receive_state = ReceiveState::receive;
     pthread_cond_wait(&_receive_condition, &_mutex);
-    _front_receiving = false;
+    _receive_state = ReceiveState::post_receive;
     pthread_mutex_unlock(&_mutex);
-    _front_received = true;
 }
-
 		
 void franka_real_time::CartesianController::send()
 {
-    if (!_front_received) throw std::runtime_error("franka_real_time: CartesianControlle did not call receive()");
-    _front_received = false;
-
     pthread_mutex_lock(&_mutex);
+    bool error = _receive_state != ReceiveState::post_receive;
+    if (!error)
     {
-        if (!_back_receiving)
+        _receive_state = ReceiveState::other;
+        if (_send_state == SendState::pre_wait)
         {
-            _back_received = true;
+            //Scenario 1: Frontend arrived before backend started to wait
+            _send_state = SendState::wait;
             pthread_cond_wait(&_send_condition, &_mutex);
         }
-        else if (!_back_timeout)
+        else if (_send_state == SendState::wait)
         {
-            _back_received = true;
-
-            //Copying frontend outputs to backend outputs
-            if (_robot->_update_timeout != Update::no) _timeout = _robot->_timeout;
-            if (_robot->_update_target_position != Update::no) _target_position = _robot->_target_position;
-            if (_robot->_update_target_orientation != Update::no) _target_orientation = _robot->_target_orientation;
-            if (_robot->_update_translation_stiffness != Update::no) _translation_stiffness = _robot->_translation_stiffness;
-            if (_robot->_update_rotation_stiffness != Update::no) _rotation_stiffness = _robot->_rotation_stiffness;
-            if (_robot->_update_translation_damping != Update::no) _translation_damping = _robot->_translation_damping;
-            if (_robot->_update_rotation_damping != Update::no) _rotation_damping = _robot->_rotation_damping;
-            if (_robot->_update_control_rotation != Update::no) _control_rotation = _robot->_control_rotation;
-
-            //Calculating results
-            _calculate_joint_torques();
-
-            //Setting results
-            if (_robot->_update_joint_torques != Update::no) _robot->_joint_torques = _joint_torques;
+            //Scenario 2: Frontend arrived when backend waited it
+            _send_state = SendState::post_wait;
+            _robot_output_to_output();
+            _calculate_result();
+            _result_to_robot_result();
             _robot->_late = false;
-
-            //Signaling
-            pthread_cond_signal(&_receive_condition);
+            pthread_cond_signal(&_send_condition);
         }
         else
         {
-            //Copying frontend outputs to late backend outputs
-            if (_robot->_update_timeout == Update::yes) { _late_timeout = _robot->_timeout; _late_update_timeout = true; }
-            if (_robot->_update_target_position == Update::yes) { _late_target_position = _robot->_target_position; _late_update_target_position = true; }
-            if (_robot->_update_target_orientation == Update::yes) { _late_target_orientation = _robot->_target_orientation; _late_update_target_orientation = true; }
-            if (_robot->_update_translation_stiffness == Update::yes) { _late_translation_stiffness = _robot->_translation_stiffness; _late_update_translation_stiffness = true; }
-            if (_robot->_update_rotation_stiffness == Update::yes) { _late_rotation_stiffness = _robot->_rotation_stiffness; _late_update_rotation_stiffness = true; }
-            if (_robot->_update_translation_damping == Update::yes) { _late_translation_damping = _robot->_translation_damping; _late_update_translation_damping = true; }
-            if (_robot->_update_rotation_damping == Update::yes) { _late_rotation_damping = _robot->_rotation_damping; _late_update_rotation_damping = true; }
-            if (_robot->_update_control_rotation == Update::yes) { _late_control_rotation = _robot->_control_rotation; _late_update_control_rotation = true; }
-
-            //Copying late results
-            if (_robot->_update_joint_torques == Update::yes) _robot->_joint_torques = _late_joint_torques;
+            //Scenario 3: Frontend did not arrive on time
+            _robot_output_to_late_output();
+            _late_result_to_robot_result();
             _robot->_late = true;
         }
     }
     pthread_mutex_unlock(&_mutex);
+
+    if (error) throw std::runtime_error("franka_real_time: CartesianController did not call receive()");
 }
 
 void franka_real_time::CartesianController::receive_and_send()
 {
     pthread_mutex_lock(&_mutex);
-    _front_resending = true;
+    _receive_state = ReceiveState::receive_and_send;
     pthread_cond_wait(&_receive_condition, &_mutex);
-    _front_resending = false;
+    _receive_state = ReceiveState::other;
     pthread_mutex_unlock(&_mutex);
-    _front_received = false;
 }
 
 void franka_real_time::CartesianController::send_and_receive()
@@ -321,7 +307,12 @@ void franka_real_time::CartesianController::send_and_receive()
 
 franka_real_time::CartesianController::~CartesianController()
 {
-    _finish = true;
+    pthread_mutex_lock(&_mutex);
+    _receive_state = ReceiveState::destructor;
+    pthread_cond_wait(&_receive_condition, &_mutex);
+    _receive_state = ReceiveState::other;
+    pthread_mutex_unlock(&_mutex);
+
     pthread_join(_backend_thread, nullptr);
     pthread_cond_destroy(&_receive_condition);
     pthread_cond_destroy(&_send_condition);

@@ -1,6 +1,71 @@
 #include "../include/franka_real_time/robot.h"
 #include <stdexcept>
 
+franka_real_time::Robot::Robot(std::string ip) : _robot(ip)
+{
+    _robot.automaticErrorRecovery();
+    _model = new franka::Model(_robot.loadModel());
+    
+    //Initializing input
+    receive();
+
+    //Initializing output
+    set_default();
+
+    //Initializing result
+    _joint_torques.setZero();
+    _late = false;
+}
+
+void franka_real_time::Robot::start()
+{
+    if (_controller != nullptr) throw std::runtime_error("franka_real_time: controller was already started");
+    _controller = new CartesianController(this);
+}
+
+void franka_real_time::Robot::stop()
+{
+    if (_controller == nullptr) throw std::runtime_error("franka_real_time: controller was not started");
+    delete _controller;
+    _controller = nullptr;
+}
+
+void franka_real_time::Robot::receive()
+{
+    if (_controller == nullptr)
+    {
+        franka::RobotState robot_state = _robot.readOnce();
+        Eigen::Affine3d transform(Eigen::Matrix<double, 4, 4>::Map(robot_state.O_T_EE.data()));
+        Eigen::Matrix<double, 6, 7> jacobian = Eigen::Matrix<double, 6, 7>::Map(_model->zeroJacobian(franka::Frame::kEndEffector, robot_state).data());
+        _joint_positions = Eigen::Matrix<double, 7, 1>::Map(robot_state.q.data());
+        _joint_velocities = Eigen::Matrix<double, 7, 1>::Map(robot_state.dq.data());
+        _position = transform.translation();
+        _orientation = transform.linear();
+        Eigen::Matrix<double, 6, 1> velocity_rotation = jacobian * _joint_velocities;
+        _velocity = velocity_rotation.head(3);
+        _rotation = velocity_rotation.tail(3);
+    }
+    else _controller->receive();
+}
+
+void franka_real_time::Robot::send()
+{
+    if (_controller == nullptr) throw std::runtime_error("franka_real_time: controller was not started");
+    _controller->send();
+}
+
+void franka_real_time::Robot::receive_and_send()
+{
+    if (_controller == nullptr) throw std::runtime_error("franka_real_time: controller was not started");
+    _controller->receive_and_send();
+}
+
+void franka_real_time::Robot::send_and_receive()
+{
+    if (_controller == nullptr) throw std::runtime_error("franka_real_time: controller was not started");
+    _controller->send_and_receive();
+}
+
 Eigen::Matrix<double, 7, 1> franka_real_time::Robot::get_joint_positions() const
 {
     return _joint_positions;
@@ -238,51 +303,19 @@ void franka_real_time::Robot::set_update(Update update)
     _update_joint_torques = update;
 }
 
-franka_real_time::Robot::Robot(std::string ip) : _robot(ip)
+void franka_real_time::Robot::set_default()
 {
-    _robot.automaticErrorRecovery();
-    _model = new franka::Model(_robot.loadModel());
-}
-
-void franka_real_time::Robot::start()
-{
-    _controller = new CartesianController(this);
-}
-
-void franka_real_time::Robot::receive()
-{
-    if (_controller == nullptr)
-    {
-        franka::RobotState robot_state = _robot.readOnce();
-        Eigen::Affine3d transform(Eigen::Matrix<double, 4, 4>::Map(robot_state.O_T_EE.data()));
-        Eigen::Matrix<double, 6, 7> jacobian = Eigen::Matrix<double, 6, 7>::Map(_model->zeroJacobian(franka::Frame::kEndEffector, robot_state).data());
-        _joint_positions = Eigen::Matrix<double, 7, 1>::Map(robot_state.q.data());
-        _joint_velocities = Eigen::Matrix<double, 7, 1>::Map(robot_state.dq.data());
-        _position = transform.translation();
-        _orientation = transform.linear();
-        Eigen::Matrix<double, 6, 1> velocity_rotation = jacobian * _joint_velocities;
-        _velocity = velocity_rotation.head(3);
-        _rotation = velocity_rotation.tail(3);
-    }
-    else _controller->receive();
-}
-
-void franka_real_time::Robot::send()
-{
-    if (_controller == nullptr) throw std::runtime_error("franka_real_time: no controller was started");
-    _controller->send();
-}
-
-void franka_real_time::Robot::receive_and_send()
-{
-    if (_controller == nullptr) throw std::runtime_error("franka_real_time: no controller was started");
-    _controller->receive_and_send();
-}
-
-void franka_real_time::Robot::send_and_receive()
-{
-    if (_controller == nullptr) throw std::runtime_error("franka_real_time: no controller was started");
-    _controller->send_and_receive();
+    receive();
+    const double translational_stiffness_constant = 100.0;
+    const double rotational_stiffness_constant = 10.0;
+    _timeout = 200;
+    _target_position = _position;
+    _target_orientation = _orientation;
+    _translation_stiffness = translational_stiffness_constant * Eigen::Matrix<double, 3, 3>::Identity();
+    _rotation_stiffness = rotational_stiffness_constant * Eigen::Matrix<double, 3, 3>::Identity();
+    _translation_damping = 2.0 * sqrt(translational_stiffness_constant) * Eigen::Matrix<double, 3, 3>::Identity();
+    _rotation_damping = 2.0 * sqrt(rotational_stiffness_constant) * Eigen::Matrix<double, 3, 3>::Identity();
+    _control_rotation = false;
 }
 
 double franka_real_time::Robot::distance() const
@@ -313,21 +346,7 @@ void franka_real_time::Robot::loop(double tolerance, unsigned int timeout)
     }
 }
 
-void franka_real_time::Robot::stop()
-{
-    if (_controller == nullptr) throw std::runtime_error("franka_real_time: no controller was started");
-    delete _controller;
-    _controller = nullptr;
-}
-
-void franka_real_time::Robot::reset()
-{
-    stop();
-    start();
-}
-
 franka_real_time::Robot::~Robot()
 {
     if (_controller != nullptr) delete _controller;
-    delete _model;
 }

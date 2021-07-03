@@ -13,6 +13,14 @@ PYBIND11_MODULE(franka_real_time, m)
 
     //Robot
     pybind11::class_<franka_real_time::Robot>(m, "Robot")
+        .def(pybind11::init<std::string>())
+        .def("start",                               &franka_real_time::Robot::start)
+        .def("stop",                                &franka_real_time::Robot::stop)
+		.def("receive",                             &franka_real_time::Robot::receive)
+		.def("send",                                &franka_real_time::Robot::send)
+		.def("receive_and_send",                    &franka_real_time::Robot::receive_and_send)
+		.def("send_and_receive",                    &franka_real_time::Robot::send_and_receive)
+
         .def("get_joint_positions",                 &franka_real_time::Robot::get_joint_positions)
         .def("get_joint_velocities",                &franka_real_time::Robot::get_joint_velocities)
 		.def("get_position",                        &franka_real_time::Robot::get_position)
@@ -20,6 +28,7 @@ PYBIND11_MODULE(franka_real_time, m)
         .def("get_orientation_euler",               &franka_real_time::Robot::get_orientation_euler)
 		.def("get_velocity",                        &franka_real_time::Robot::get_velocity)
         .def("get_rotation",                        &franka_real_time::Robot::get_rotation)
+        
         .def("set_timeout",                         &franka_real_time::Robot::set_timeout)
         .def("set_target_position",                 &franka_real_time::Robot::set_target_position)
         .def("set_target_orientation",              &franka_real_time::Robot::set_target_orientation)
@@ -54,19 +63,14 @@ PYBIND11_MODULE(franka_real_time, m)
         .def("get_translation_damping_update",      &franka_real_time::Robot::get_translation_damping_update)
         .def("get_rotation_damping_update",         &franka_real_time::Robot::get_rotation_damping_update)
         .def("get_control_rotation_update",         &franka_real_time::Robot::get_control_rotation_update)
+        
         .def("get_joint_torques",                   &franka_real_time::Robot::get_joint_torques)
         .def("get_late",                            &franka_real_time::Robot::get_late)
         .def("set_joint_torques_update",            &franka_real_time::Robot::set_joint_torques_update)
         .def("get_joint_torques_update",            &franka_real_time::Robot::get_joint_torques_update)
+        
         .def("set_update",                          &franka_real_time::Robot::set_update)
-        .def(pybind11::init<std::string>())
-        .def("start",                               &franka_real_time::Robot::start)
-		.def("receive",                             &franka_real_time::Robot::receive)
-		.def("send",                                &franka_real_time::Robot::send)
-		.def("receive_and_send",                    &franka_real_time::Robot::receive_and_send)
-		.def("send_and_receive",                    &franka_real_time::Robot::send_and_receive)
+        .def("set_default",                         &franka_real_time::Robot::set_default)
         .def("distance",                            &franka_real_time::Robot::distance)
-        .def("loop",                                &franka_real_time::Robot::loop)
-        .def("stop",                                &franka_real_time::Robot::stop)
-        .def("reset",                               &franka_real_time::Robot::reset);
+        .def("loop",                                &franka_real_time::Robot::loop);
 }
