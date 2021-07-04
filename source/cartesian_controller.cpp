@@ -38,6 +38,8 @@ void franka_real_time::CartesianController::_robot_output_to_output()
     if (_robot->_update_translation_damping != Update::no) _translation_damping = _robot->_translation_damping;
     if (_robot->_update_rotation_damping != Update::no) _rotation_damping = _robot->_rotation_damping;
     if (_robot->_update_control_rotation != Update::no) _control_rotation = _robot->_control_rotation;
+    if (_robot->_update_joint_torques_limit != Update::no) _joint_torques_limit = _robot->_joint_torques_limit;
+    if (_robot->_update_frequency_divider != Update::no) _frequency_divider = _robot->_frequency_divider;
 }
 
 void franka_real_time::CartesianController::_calculate_result()
@@ -63,6 +65,12 @@ void franka_real_time::CartesianController::_calculate_result()
     {
         _joint_torques = _rotation_correction * (_jacobian.transpose() * cartesian_reaction + _coriolis);
     }
+
+    //Security
+    const double max_joint_torques[7] = { 87.0, 87.0, 87.0, 87.0, 12.0, 12.0, 12.0 };
+    double coefficient = 1.0;
+    for (size_t i = 0; i < 7; i++) { if (abs(max_joint_torques[i] / _joint_torques(i)) < coefficient) coefficient = abs(max_joint_torques[i] / _joint_torques(i)); }
+    for (size_t i = 0; i < 7; i++) _joint_torques(i) *= coefficient;
 }
 
 void franka_real_time::CartesianController::_result_to_robot_result()
@@ -80,6 +88,8 @@ void franka_real_time::CartesianController::_robot_output_to_late_output()
     if (_robot->_update_translation_damping == Update::yes) { _late_translation_damping = _robot->_translation_damping; _late_update_translation_damping = true; }
     if (_robot->_update_rotation_damping == Update::yes) { _late_rotation_damping = _robot->_rotation_damping; _late_update_rotation_damping = true; }
     if (_robot->_update_control_rotation == Update::yes) { _late_control_rotation = _robot->_control_rotation; _late_update_control_rotation = true; }
+    if (_robot->_update_joint_torques_limit == Update::yes) { _late_joint_torques_limit = _robot->_joint_torques_limit; _late_update_joint_torques_limit = true; }
+    if (_robot->_update_frequency_divider == Update::yes) { _late_frequency_divider = _robot->_frequency_divider; _late_update_frequency_divider = true; }
 }
 
 void franka_real_time::CartesianController::_late_output_to_output()
@@ -92,6 +102,8 @@ void franka_real_time::CartesianController::_late_output_to_output()
     if (_late_update_translation_damping) { _translation_damping = _late_translation_damping; _late_update_translation_damping = false; }
     if (_late_update_rotation_damping) { _rotation_damping = _late_rotation_damping; _late_update_rotation_damping = false; }
     if (_late_update_control_rotation) { _control_rotation = _late_control_rotation; _late_update_control_rotation = false; }
+    if (_late_update_joint_torques_limit) { _joint_torques_limit = _late_joint_torques_limit; _late_update_joint_torques_limit = false; }
+    if (_late_update_frequency_divider) { _frequency_divider = _late_frequency_divider; _late_update_frequency_divider = false; }
 }
 
 void franka_real_time::CartesianController::_result_to_late_result()
@@ -106,6 +118,17 @@ void franka_real_time::CartesianController::_late_result_to_robot_result()
 
 void franka_real_time::CartesianController::_control(const franka::RobotState &robot_state)
 {
+    //Frequency divider
+    if (++_frequency_divider_count < _frequency_divider)
+    {
+        _state_to_input(robot_state);
+        _calculate_temporary(robot_state);
+        _calculate_result();
+        _joint_torques_finished = false;
+        return;
+    }
+    _frequency_divider_count = 0;
+
     //Setting backend inputs
     _state_to_input(robot_state);
 

@@ -38,15 +38,19 @@ namespace franka_real_time
         Eigen::Matrix<double, 3, 3> _translation_damping;
         Eigen::Matrix<double, 3, 3> _rotation_damping;
         bool _control_rotation;
+        double _joint_torques_limit;
+        unsigned int _frequency_divider;
 
-		Update _update_timeout               = Update::yes;
-        Update _update_target_position       = Update::yes;
-        Update _update_target_orientation    = Update::yes;
-        Update _update_translation_stiffness = Update::yes;
-        Update _update_rotation_stiffness    = Update::yes;
-        Update _update_translation_damping   = Update::yes;
-        Update _update_rotation_damping      = Update::yes;
-        Update _update_control_rotation      = Update::yes;
+		Update _update_timeout                  = Update::yes;
+        Update _update_target_position          = Update::yes;
+        Update _update_target_orientation       = Update::yes;
+        Update _update_translation_stiffness    = Update::yes;
+        Update _update_rotation_stiffness       = Update::yes;
+        Update _update_translation_damping      = Update::yes;
+        Update _update_rotation_damping         = Update::yes;
+        Update _update_control_rotation         = Update::yes;
+        Update _update_joint_torques_limit      = Update::yes;
+        Update _update_frequency_divider        = Update::yes;
 
         //Result
 		Eigen::Matrix<double, 7, 1> _joint_torques;
@@ -105,6 +109,10 @@ namespace franka_real_time
         void set_rotation_damping(Eigen::Matrix<double, 3, 3> damping);
         ///Sets indicator if rotation should be handled (output)
         void set_control_rotation(bool control);
+        ///Sets security limit for torques, 1.0 to full torques (output)
+        void set_joint_torques_limit(double limit);
+        ///Sets frequency divider (output)
+        void set_frequency_divider(unsigned int divider);
         ///Returns timeout in microsencods (output)
         unsigned int get_timeout()                                  const;
         ///Returns cartesian position of tartget (output)
@@ -123,6 +131,10 @@ namespace franka_real_time
         Eigen::Matrix<double, 3, 3> get_rotation_damping()          const;
         ///Returns indicator if rotation should be handled (output)
         bool get_control_rotation()                                 const;
+        ///Returns security limit for torques (output)
+        double get_joint_torques_limit()                            const;
+        ///Returns frequency divider (output)
+        unsigned int get_frequency_divider()                        const;
         ///Sets update mode of timeout (output)
         void set_timeout_update(Update update);
         ///Sets update mode of target cartesian position (output)
@@ -139,6 +151,10 @@ namespace franka_real_time
         void set_rotation_damping_update(Update update);
         ///Sets update mode of indicator if rotation should be handled (output)
         void set_control_rotation_update(Update update);
+        ///Sets update mode of security limit for torques (output)
+        void set_joint_torques_limit_update(Update update);
+        ///Sets update mode of frequency divider (output)
+        void set_frequency_divider_update(Update update);
         ///Returns update mode of timeout (output)
         Update get_timeout_update()                 const;
         ///Returns update mode of target cartesian position (output)
@@ -155,6 +171,10 @@ namespace franka_real_time
         Update get_rotation_damping_update()        const;
         ///Returns update mode of indicator if rotation should be handled (output)
         Update get_control_rotation_update()        const;
+        ///Returns update mode of security limit for torques (output)
+        Update get_joint_torques_limit_update()     const;
+        ///Returns update mode of frequency divider (output)
+        Update get_frequency_divider_update()       const;
 
         //Result:
 		///Returns torques sent to the robot (result)
@@ -217,6 +237,8 @@ Fields of `Robot` class can be divided in three groups:
  - Input: fields are refreshed with `receive()` (positions, velocities, etc.)
  - Output: fields are applied with `send()` (stiffness, damping, etc.)
  - Result: fileds are refreshed with `send()` (torques and lateness indicator)
+
+Note that setters <b>do not</b> actually set values the controoler uses. `send()` or it's variations must be called for that.
 
 @section Dependencies
 The library depends on:

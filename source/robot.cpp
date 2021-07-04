@@ -146,6 +146,16 @@ void franka_real_time::Robot::set_control_rotation(bool control)
     _control_rotation = control;
 }
 
+void franka_real_time::Robot::set_joint_torques_limit(double limit)
+{
+    _joint_torques_limit = limit;
+}
+
+void franka_real_time::Robot::set_frequency_divider(unsigned int divider)
+{
+    _frequency_divider = divider;
+}
+
 unsigned int franka_real_time::Robot::get_timeout() const
 {
     return _timeout;
@@ -191,6 +201,16 @@ bool franka_real_time::Robot::get_control_rotation() const
     return _control_rotation;
 }
 
+double franka_real_time::Robot::get_joint_torques_limit() const
+{
+    return _joint_torques_limit;
+}
+
+unsigned int franka_real_time::Robot::get_frequency_divider() const
+{
+    return _frequency_divider;
+}
+
 void franka_real_time::Robot::set_timeout_update(Update update)
 {
     _update_timeout = update;
@@ -229,6 +249,16 @@ void franka_real_time::Robot::set_rotation_damping_update(Update update)
 void franka_real_time::Robot::set_control_rotation_update(Update update)
 {
     _update_control_rotation = update;
+}
+
+void franka_real_time::Robot::set_joint_torques_limit_update(Update update)
+{
+    _update_joint_torques_limit = update;
+}
+
+void franka_real_time::Robot::set_frequency_divider_update(Update update)
+{
+    _update_frequency_divider = update;
 }
 
 franka_real_time::Update franka_real_time::Robot::get_timeout_update() const
@@ -271,6 +301,16 @@ franka_real_time::Update franka_real_time::Robot::get_control_rotation_update() 
     return _update_control_rotation;
 }
 
+franka_real_time::Update franka_real_time::Robot::get_joint_torques_limit_update() const
+{
+    return _update_joint_torques_limit;
+}
+
+franka_real_time::Update franka_real_time::Robot::get_frequency_divider_update() const
+{
+    return _update_frequency_divider;
+}
+
 Eigen::Matrix<double, 7, 1> franka_real_time::Robot::get_joint_torques() const
 {
     return _joint_torques;
@@ -300,12 +340,14 @@ void franka_real_time::Robot::set_update(Update update)
     _update_translation_damping = update;
     _update_rotation_damping = update;
     _update_control_rotation = update;
+    _update_joint_torques_limit = update;
+    _update_frequency_divider = update;
     _update_joint_torques = update;
 }
 
 void franka_real_time::Robot::set_default()
 {
-    receive();
+    receive(); //For position and orientation
     const double translational_stiffness_constant = 100.0;
     const double rotational_stiffness_constant = 10.0;
     _timeout = 200;
@@ -316,6 +358,8 @@ void franka_real_time::Robot::set_default()
     _translation_damping = 2.0 * sqrt(translational_stiffness_constant) * Eigen::Matrix<double, 3, 3>::Identity();
     _rotation_damping = 2.0 * sqrt(rotational_stiffness_constant) * Eigen::Matrix<double, 3, 3>::Identity();
     _control_rotation = false;
+    _joint_torques_limit = 1.0;
+    _frequency_divider = 1;
 }
 
 double franka_real_time::Robot::distance() const

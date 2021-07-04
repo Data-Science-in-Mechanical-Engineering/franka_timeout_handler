@@ -33,9 +33,10 @@ namespace franka_real_time
         };
 
         //States
-        ReceiveState _receive_state = ReceiveState::other;
-        SendState _send_state       = SendState::other;
-        Robot *_robot               = nullptr;
+        ReceiveState _receive_state             = ReceiveState::other;
+        SendState _send_state                   = SendState::other;
+        unsigned int _frequency_divider_count   = 0;
+        Robot *_robot                           = nullptr;
         
         //Calculation
         Eigen::Matrix<double, 7, 1> _joint_positions;
@@ -57,6 +58,8 @@ namespace franka_real_time
         Eigen::Matrix<double, 3, 3> _translation_damping;
         Eigen::Matrix<double, 3, 3> _rotation_damping;
         bool _control_rotation;
+        double _joint_torques_limit;
+        unsigned int _frequency_divider;
         
         Eigen::Matrix<double, 7, 1> _joint_torques;
         bool _joint_torques_finished;
@@ -78,6 +81,10 @@ namespace franka_real_time
         bool _late_update_rotation_damping      = false;
         bool _late_control_rotation;
         bool _late_update_control_rotation      = false;
+        bool _late_joint_torques_limit;
+        bool _late_update_joint_torques_limit   = false;
+        bool _late_frequency_divider;
+        bool _late_update_frequency_divider     = false;
 
         Eigen::Matrix<double, 7, 1> _late_joint_torques;
 

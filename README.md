@@ -41,6 +41,8 @@ Fields of `Robot` class can be divided in three groups:
 
  - Result: fileds are refreshed with `send()` (torques and lateness indicator)
 
+Note that setters **do not** actually set values the controoler uses. `send()` or it's variations must be called for that.
+
 ### Dependencies
 The library depends on:
  - [libfranka](https://github.com/frankaemika/libfranka) (as part of ROS)
