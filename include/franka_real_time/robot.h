@@ -195,8 +195,8 @@ namespace franka_real_time
         double distance() const;
         ///Iterates till the robot reaches target with given tolerance or till time expire
         ///@param tolerance Norm of distance between position and target that can be tolerated
-        ///@param timeout Maximal time in milliseconds (number of iterations)
-        void loop(double tolerance, unsigned int timeout);
+        ///@param iterations Maximal number of iterations
+        void loop(double tolerance, unsigned int iterations);
         
 		///Destroys robot
 		~Robot();

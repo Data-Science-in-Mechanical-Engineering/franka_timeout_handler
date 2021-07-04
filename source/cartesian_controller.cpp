@@ -67,10 +67,9 @@ void franka_real_time::CartesianController::_calculate_result()
     }
 
     //Security
-    const double max_joint_torques[7] = { 87.0, 87.0, 87.0, 87.0, 12.0, 12.0, 12.0 };
-    double coefficient = 1.0;
-    for (size_t i = 0; i < 7; i++) { if (abs(max_joint_torques[i] / _joint_torques(i)) < coefficient) coefficient = abs(max_joint_torques[i] / _joint_torques(i)); }
-    for (size_t i = 0; i < 7; i++) _joint_torques(i) *= coefficient;
+    Eigen::Array<double, 9, 1> limits;
+    limits << 1.0, _joint_torques_limit, _joint_torques_maximum.array().abs() / _joint_torques.array();
+    _joint_torques *= limits.minCoeff();
 }
 
 void franka_real_time::CartesianController::_result_to_robot_result()
@@ -218,27 +217,13 @@ void franka_real_time::CartesianController::_control(const franka::RobotState &r
     }
 }
 
-Eigen::Matrix<double, 7, 7> franka_real_time::CartesianController::_pseudoinverse(const Eigen::Matrix<double, 7, 7> &a, double epsilon)
-{
-    Eigen::BDCSVD<Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic>> svd(a, Eigen::ComputeThinU | Eigen::ComputeThinV);
-    svd.setThreshold(epsilon * std::max(a.cols(), a.rows()));
-    Eigen::Index rank = svd.rank();
-    Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> tmp = svd.matrixU().leftCols(rank).adjoint();
-    tmp = svd.singularValues().head(rank).asDiagonal().inverse() * tmp;
-    return svd.matrixV().leftCols(rank) * tmp;
-}
-
 franka_real_time::CartesianController::CartesianController(Robot *robot)
 {
     _robot = robot;
 
-    //Init rotation correction
-    Eigen::Matrix<double, 7, 7> T;
-    T.setZero();
-    T.diagonal() << 0.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0;
-    _rotation_correction = Eigen::Matrix<double, 7, 7>::Identity() - T;
-    //Eigen::Matrix<double, 7, 7> N = Eigen::Matrix<double, 7, 7>::Identity() - _pseudoinverse(T, 1e-4) * T;
-    //_rotation_correction = N * _pseudoinverse(N, 1e-4);
+    //Init constants
+    _rotation_correction << 1.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0;
+    _joint_torques_maximum << 87.0, 87.0, 87.0, 87.0, 12.0, 12.0, 12.0;
 
     //Init outputs
     _robot_output_to_output();

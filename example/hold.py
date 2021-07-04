@@ -10,11 +10,6 @@ if __name__ == "__main__":
 
 	robot = franka_real_time.Robot(sys.argv[1])
 	robot.start()
-    
-	robot.receive()
-	robot.set_target_position(robot.get_position())
-	robot.set_target_orientation(robot.get_orientation())
-    
 	while True:
 		robot.receive()
 		robot.send()

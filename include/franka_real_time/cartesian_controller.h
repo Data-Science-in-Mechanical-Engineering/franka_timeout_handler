@@ -48,6 +48,7 @@ namespace franka_real_time
         Eigen::Matrix<double, 7, 1> _coriolis;
         Eigen::Matrix<double, 6, 7> _jacobian;
         Eigen::Matrix<double, 7, 7> _rotation_correction;
+        Eigen::Matrix<double, 7, 1> _joint_torques_maximum;
 
         //Current values
         unsigned int _timeout;
@@ -60,7 +61,7 @@ namespace franka_real_time
         bool _control_rotation;
         double _joint_torques_limit;
         unsigned int _frequency_divider;
-        
+
         Eigen::Matrix<double, 7, 1> _joint_torques;
         bool _joint_torques_finished;
 
@@ -107,7 +108,6 @@ namespace franka_real_time
         void _late_result_to_robot_result();
 
         void _control(const franka::RobotState &robot_state);
-        Eigen::Matrix<double, 7, 7> _pseudoinverse(const Eigen::Matrix<double, 7, 7> &a, double epsilon);
 
 		CartesianController(Robot *robot);
         virtual void receive();

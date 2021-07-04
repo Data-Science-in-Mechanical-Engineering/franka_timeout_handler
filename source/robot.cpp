@@ -382,11 +382,13 @@ double franka_real_time::Robot::distance() const
     return error.norm();
 }
 
-void franka_real_time::Robot::loop(double tolerance, unsigned int timeout)
+void franka_real_time::Robot::loop(double tolerance, unsigned int iterations)
 {
-    for (unsigned int i = 0; i < timeout; i++)
+    receive_and_send();
+    for (unsigned int i = 0; i < iterations; i++)
     {
         if (distance() <= tolerance) break;
+        receive();
     }
 }
 
