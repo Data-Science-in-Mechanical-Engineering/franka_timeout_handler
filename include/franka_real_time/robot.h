@@ -83,7 +83,7 @@ namespace franka_real_time
 		Eigen::Matrix<double, 3, 1> get_position()          const;
         ///Returns cartesian orientation (input)
 		Eigen::Quaterniond get_orientation()                const;
-        ///Returns cartesian orientation in Euler angles: roll, pitch, yaw (input)
+        ///Returns cartesian orientation in Euler angles: yaw, pitch, roll (input)
         Eigen::Matrix<double, 3, 1> get_orientation_euler() const;
 		///Returns cartesian velocity (input)
 		Eigen::Matrix<double, 3, 1> get_velocity()          const;
@@ -97,7 +97,7 @@ namespace franka_real_time
         void set_target_position(Eigen::Matrix<double, 3, 1> position);
         ///Sets cartesian orientation of tartget (output)
         void set_target_orientation(Eigen::Quaterniond orientation);
-        ///Sets cartesian orientation of target in Euler angles: roll, pitch, yaw (output)
+        ///Sets cartesian orientation of target in Euler angles: yaw, pitch, roll (output)
         void set_target_orientation_euler(Eigen::Matrix<double, 3, 1> euler);
         ///Sets translation stiffness matrix (output)
         void set_translation_stiffness(Eigen::Matrix<double, 3, 3> stiffness);
@@ -119,7 +119,7 @@ namespace franka_real_time
         Eigen::Matrix<double, 3, 1> get_target_position()           const;
         ///Returns cartesian orientation of tartget (output)
         Eigen::Quaterniond get_target_orientation()                 const;
-        ///Returns cartesian orientation of target in Euler angles: roll, pitch, yaw (output)
+        ///Returns cartesian orientation of target in Euler angles: yaw, pitch, roll (output)
         Eigen::Matrix<double, 3, 1> get_target_orientation_euler()  const;
         ///Returns translation stiffness matrix (output)
         Eigen::Matrix<double, 3, 3> get_translation_stiffness()     const;
