@@ -3,6 +3,7 @@
 #include "update.h"
 #include "cartesian_controller.h"
 #include <thread>
+#include <cstdint>
 #include <franka/robot.h>
 #include <franka/model.h>
 #include <Eigen/Dense>
@@ -28,6 +29,7 @@ namespace franka_real_time
         Eigen::Quaterniond _orientation;
 		Eigen::Matrix<double, 3, 1> _velocity;
         Eigen::Matrix<double, 3, 1> _rotation;
+        std::uint64_t _call;
 
         //Output
         unsigned int _timeout;
@@ -91,6 +93,8 @@ namespace franka_real_time
 		Eigen::Matrix<double, 3, 1> get_velocity()          const;
         ///Returns cartesian rotation (input)
 		Eigen::Matrix<double, 3, 1> get_rotation()          const;
+        ///Returns call number (input)
+        std::uint64_t get_call()                            const;
 
         //Output:
         ///Sets timeout in microsencods (output)

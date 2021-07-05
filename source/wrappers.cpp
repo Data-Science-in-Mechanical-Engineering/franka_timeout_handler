@@ -29,6 +29,7 @@ PYBIND11_MODULE(franka_real_time, m)
         .def("get_orientation_vector",              &franka_real_time::Robot::get_orientation_vector)
 		.def("get_velocity",                        &franka_real_time::Robot::get_velocity)
         .def("get_rotation",                        &franka_real_time::Robot::get_rotation)
+        .def("get_call",                            &franka_real_time::Robot::get_call)
         
         .def("set_timeout",                         &franka_real_time::Robot::set_timeout)
         .def("set_target_position",                 &franka_real_time::Robot::set_target_position)

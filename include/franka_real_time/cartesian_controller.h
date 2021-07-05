@@ -5,6 +5,7 @@
 #include <Eigen/Dense>
 #include <Eigen/Geometry>
 #include <thread>
+#include <cstdint>
 
 namespace franka_real_time
 {
@@ -38,19 +39,22 @@ namespace franka_real_time
         unsigned int _frequency_divider_count   = 0;
         Robot *_robot                           = nullptr;
         
-        //Calculation
+        //Input
         Eigen::Matrix<double, 7, 1> _joint_positions;
         Eigen::Matrix<double, 7, 1> _joint_velocities;
         Eigen::Affine3d _transform;
         Eigen::Matrix<double, 3, 1> _position;
         Eigen::Quaterniond _orientation;
         Eigen::Matrix<double, 6, 1> _velocity_rotation;
+        std::uint64_t _call;
+
+        //Calculation
         Eigen::Matrix<double, 7, 1> _coriolis;
         Eigen::Matrix<double, 6, 7> _jacobian;
         Eigen::Matrix<double, 7, 7> _rotation_correction;
         Eigen::Matrix<double, 7, 1> _joint_torques_maximum;
 
-        //Current values
+        //Output
         unsigned int _timeout;
         Eigen::Matrix<double, 3, 1> _target_position;
         Eigen::Quaterniond _target_orientation;
@@ -62,6 +66,7 @@ namespace franka_real_time
         double _joint_torques_limit;
         unsigned int _frequency_divider;
 
+        //Result
         Eigen::Matrix<double, 7, 1> _joint_torques;
         bool _joint_torques_finished;
 

@@ -21,6 +21,7 @@ void franka_real_time::CartesianController::_input_to_robot_input()
     _robot->_orientation = _orientation;
     _robot->_velocity = _velocity_rotation.head(3);
     _robot->_rotation = _velocity_rotation.tail(3);
+    _robot->_call = _call;
 }
 
 void franka_real_time::CartesianController::_calculate_temporary(const franka::RobotState &robot_state)
@@ -110,6 +111,8 @@ void franka_real_time::CartesianController::_late_result_to_robot_result()
 
 void franka_real_time::CartesianController::_control(const franka::RobotState &robot_state)
 {
+    _call++;
+    
     //Frequency divider
     if (++_frequency_divider_count < _frequency_divider)
     {
@@ -213,6 +216,9 @@ void franka_real_time::CartesianController::_control(const franka::RobotState &r
 franka_real_time::CartesianController::CartesianController(Robot *robot)
 {
     _robot = robot;
+    
+    //Init call count
+    _call = 0;
 
     //Init constants
     _rotation_correction.setZero();

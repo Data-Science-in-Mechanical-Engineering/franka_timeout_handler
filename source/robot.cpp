@@ -44,6 +44,7 @@ void franka_real_time::Robot::receive()
         Eigen::Matrix<double, 6, 1> velocity_rotation = jacobian * _joint_velocities;
         _velocity = velocity_rotation.head(3);
         _rotation = velocity_rotation.tail(3);
+        _call = 0;
     }
     else _controller->receive();
 }
@@ -104,6 +105,12 @@ Eigen::Matrix<double, 3, 1> franka_real_time::Robot::get_velocity() const
 Eigen::Matrix<double, 3, 1> franka_real_time::Robot::get_rotation() const
 {
     return _rotation;
+}
+
+
+std::uint64_t franka_real_time::Robot::get_call() const
+{
+    return _call;
 }
 
 void franka_real_time::Robot::set_timeout(unsigned int timeout)
