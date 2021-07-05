@@ -113,22 +113,22 @@ void franka_real_time::Robot::set_timeout(unsigned int timeout)
 
 void franka_real_time::Robot::set_target_position(Eigen::Matrix<double, 3, 1> position)
 {
-    _position = position;
+    _target_position = position;
 }
 
 void franka_real_time::Robot::set_target_orientation(Eigen::Quaterniond orientation)
 {
-    _orientation = orientation;
+    _target_orientation = orientation;
 }
 
 void franka_real_time::Robot::set_target_orientation_euler(Eigen::Matrix<double, 3, 1> euler)
 {
-    _orientation = Eigen::AngleAxisd(euler(0), Eigen::Vector3d::UnitZ()) * Eigen::AngleAxisd(euler(1), Eigen::Vector3d::UnitY()) * Eigen::AngleAxisd(euler(2), Eigen::Vector3d::UnitX());
+    _target_orientation = Eigen::AngleAxisd(euler(0), Eigen::Vector3d::UnitZ()) * Eigen::AngleAxisd(euler(1), Eigen::Vector3d::UnitY()) * Eigen::AngleAxisd(euler(2), Eigen::Vector3d::UnitX());
 }
 
 void franka_real_time::Robot::set_target_orientation_vector(Eigen::Matrix<double, 4, 1> xyzw)
 {
-    _orientation = Eigen::Quaterniond(xyzw(3), xyzw(0), xyzw(1), xyzw(2));
+    _target_orientation = Eigen::Quaterniond(xyzw(3), xyzw(0), xyzw(1), xyzw(2));
 }
 
 void franka_real_time::Robot::set_translation_stiffness(Eigen::Matrix<double, 3, 3> stiffness)

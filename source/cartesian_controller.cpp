@@ -44,32 +44,25 @@ void franka_real_time::CartesianController::_robot_output_to_output()
 
 void franka_real_time::CartesianController::_calculate_result()
 {
-    Eigen::Matrix<double, 6, 1> cartesian_reaction;
-    cartesian_reaction.setZero();
-
-    //Position
-    Eigen::Matrix<double, 3, 1> position_error = _position - _target_position;
-    cartesian_reaction.head(3) = -_translation_stiffness * position_error -_translation_damping * _velocity_rotation.head(3);
-
-    //Orientation
-    if (_control_rotation)
-    {
-        if (_target_orientation.coeffs().dot(_orientation.coeffs()) < 0.0) _orientation.coeffs() = -_orientation.coeffs();
-        Eigen::Quaterniond orientation_error_quaternion = _orientation.inverse() * _target_orientation;
-        Eigen::Matrix<double, 3, 1> orientation_error(orientation_error_quaternion.x(), orientation_error_quaternion.y(), orientation_error_quaternion.z());
-        orientation_error = -_transform.linear() * orientation_error;
-        cartesian_reaction.tail(3) = -_rotation_stiffness * orientation_error -_rotation_damping * _velocity_rotation.tail(3);
-        _joint_torques = _jacobian.transpose() * cartesian_reaction + _coriolis;  
-    }
-    else
-    {
-        _joint_torques = _rotation_correction * (_jacobian.transpose() * cartesian_reaction + _coriolis);
-    }
+    Eigen::Matrix<double, 6, 6> stiffness;
+    stiffness.setZero();
+    stiffness.topLeftCorner(3, 3) << _translation_stiffness;
+    if (_control_rotation) stiffness.bottomRightCorner(3, 3) << _rotation_stiffness;
+    Eigen::Matrix<double, 6, 6> damping;
+    damping.setZero();
+    damping.topLeftCorner(3, 3) << _translation_damping;
+    if (_control_rotation) damping.bottomRightCorner(3, 3) << _rotation_damping;
+    Eigen::Matrix<double, 6, 1> error;
+    error.head(3) << _position - _target_position;
+    if (_target_orientation.coeffs().dot(_orientation.coeffs()) < 0.0) _orientation.coeffs() << -_orientation.coeffs();
+    Eigen::Quaterniond error_quaternion(_orientation.inverse() * _target_orientation);
+    error.tail(3) << error_quaternion.x(), error_quaternion.y(), error_quaternion.z();
+    error.tail(3) << -_transform.linear() * error.tail(3);
+    _joint_torques << _jacobian.transpose() * (-stiffness * error - damping * _velocity_rotation) + _coriolis;
 
     //Security
-    Eigen::Array<double, 9, 1> limits;
-    limits << 1.0, _joint_torques_limit, _joint_torques_maximum.array().abs() / _joint_torques.array();
-    _joint_torques *= limits.minCoeff();
+    Eigen::Array<double, 7, 1> limits = (_joint_torques_limit * _joint_torques_maximum.array() / _joint_torques.array()).abs();
+    if (limits.minCoeff() < 1.0) _joint_torques *= limits.minCoeff();
 }
 
 void franka_real_time::CartesianController::_result_to_robot_result()
@@ -222,7 +215,8 @@ franka_real_time::CartesianController::CartesianController(Robot *robot)
     _robot = robot;
 
     //Init constants
-    _rotation_correction << 1.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0;
+    _rotation_correction.setZero();
+    _rotation_correction.diagonal() << 1.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0;
     _joint_torques_maximum << 87.0, 87.0, 87.0, 87.0, 12.0, 12.0, 12.0;
 
     //Init outputs
