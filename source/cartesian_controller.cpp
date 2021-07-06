@@ -41,29 +41,50 @@ void franka_real_time::CartesianController::_robot_output_to_output()
     if (_robot->_update_control_rotation != Update::no) _control_rotation = _robot->_control_rotation;
     if (_robot->_update_joint_torques_limit != Update::no) _joint_torques_limit = _robot->_joint_torques_limit;
     if (_robot->_update_frequency_divider != Update::no) _frequency_divider = _robot->_frequency_divider;
+    if(_robot->_update_use_joint_controller_flag != Update::no) _use_joint_controller=_robot->_use_joint_controller;
+    if(_robot->_update_target_joint_position != Update::no) _target_joint_position = _robot->_target_joint_position;
 }
 
 void franka_real_time::CartesianController::_calculate_result()
-{
+{   if(_use_joint_controller){
+        _joint_torques.setZero();
+        //
+        const std::array<double, 7> k_gains = {{600.0, 600.0, 600.0, 600.0, 250.0, 150.0, 50.0}};
+        // Damping
+        const std::array<double, 7> d_gains = {{50.0, 50.0, 50.0, 50.0, 30.0, 25.0, 15.0}};
+
+        for (size_t i = 0; i < 7; i++) {
+        _joint_torques(i) =
+            0.1*k_gains[i] * (_target_joint_position(i) - _joint_positions(i)) - 0.32*d_gains[i] * _joint_velocities(i) + _coriolis(i);
+      }
+    // std::cout<<_joint_torques<<std::endl;
+    //_joint_torques.setZero();
+    }
+    else{
     Eigen::Matrix<double, 6, 6> stiffness;
     stiffness.setZero();
     stiffness.topLeftCorner(3, 3) << _translation_stiffness;
-    if (_control_rotation) stiffness.bottomRightCorner(3, 3) << _rotation_stiffness;
+    stiffness.bottomRightCorner(3, 3) << _rotation_stiffness;
     Eigen::Matrix<double, 6, 6> damping;
     damping.setZero();
     damping.topLeftCorner(3, 3) << _translation_damping;
-    if (_control_rotation) damping.bottomRightCorner(3, 3) << _rotation_damping;
+    damping.bottomRightCorner(3, 3) << _rotation_damping;
     Eigen::Matrix<double, 6, 1> error;
     error.head(3) << _position - _target_position;
     if (_target_orientation.coeffs().dot(_orientation.coeffs()) < 0.0) _orientation.coeffs() << -_orientation.coeffs();
     Eigen::Quaterniond error_quaternion(_orientation.inverse() * _target_orientation);
     error.tail(3) << error_quaternion.x(), error_quaternion.y(), error_quaternion.z();
     error.tail(3) << -_transform.linear() * error.tail(3);
-    _joint_torques << _jacobian.transpose() * (-stiffness * error - damping * _velocity_rotation) + _coriolis;
-
+    //std::cout<<-_joint_positions(0)<<std::endl;
+    _joint_torques << _rotation_correction *(_jacobian.transpose() * (-stiffness * error - damping * _velocity_rotation) + _coriolis);
+    //_joint_torques(0)=0;
+    //if(_joint_torques(0)!=0) std::cout<<_joint_torques(0)<<std::endl;
+    //std::cout<<-_joint_torques(0)<<std::endl;
+    
+    }
     //Security
-    Eigen::Array<double, 7, 1> limits = (_joint_torques_limit * _joint_torques_maximum.array() / _joint_torques.array()).abs();
-    if (limits.minCoeff() < 1.0) _joint_torques *= limits.minCoeff();
+    //Eigen::Array<double, 7, 1> limits = (_joint_torques_limit * _joint_torques_maximum.array() / _joint_torques.array()).abs();
+    //if (limits.minCoeff() < 1.0) _joint_torques *= limits.minCoeff();
 }
 
 void franka_real_time::CartesianController::_result_to_robot_result()
@@ -75,6 +96,7 @@ void franka_real_time::CartesianController::_robot_output_to_late_output()
 {
     if (_robot->_update_timeout == Update::yes) { _late_timeout = _robot->_timeout; _late_update_timeout = true; }
     if (_robot->_update_target_position == Update::yes) { _late_target_position = _robot->_target_position; _late_update_target_position = true; }
+    if(_robot->_update_target_joint_position==Update::yes){_late_target_joint_position = _robot->_target_joint_position; _late_update_target_joint_position = true;}
     if (_robot->_update_target_orientation == Update::yes) { _late_target_orientation = _robot->_target_orientation; _late_update_target_orientation = true; }
     if (_robot->_update_translation_stiffness == Update::yes) { _late_translation_stiffness = _robot->_translation_stiffness; _late_update_translation_stiffness = true; }
     if (_robot->_update_rotation_stiffness == Update::yes) { _late_rotation_stiffness = _robot->_rotation_stiffness; _late_update_rotation_stiffness = true; }
@@ -83,12 +105,15 @@ void franka_real_time::CartesianController::_robot_output_to_late_output()
     if (_robot->_update_control_rotation == Update::yes) { _late_control_rotation = _robot->_control_rotation; _late_update_control_rotation = true; }
     if (_robot->_update_joint_torques_limit == Update::yes) { _late_joint_torques_limit = _robot->_joint_torques_limit; _late_update_joint_torques_limit = true; }
     if (_robot->_update_frequency_divider == Update::yes) { _late_frequency_divider = _robot->_frequency_divider; _late_update_frequency_divider = true; }
+    if (_robot->_update_use_joint_controller_flag == Update::yes){_late_use_joint_controller=_robot->_use_joint_controller;_late_update_use_joint_controller =true;}
+    
 }
 
 void franka_real_time::CartesianController::_late_output_to_output()
 {
     if (_late_update_timeout) { _timeout = _late_timeout; _late_update_timeout = false; }
     if (_late_update_target_position) { _target_position = _late_target_position; _late_update_target_position = false; }
+    if(_late_update_target_joint_position){_target_joint_position = _late_target_joint_position; _late_update_target_joint_position = false;}
     if (_late_update_target_orientation) { _target_orientation = _late_target_orientation; _late_update_target_orientation = false; }
     if (_late_update_translation_stiffness) { _translation_stiffness = _late_translation_stiffness; _late_update_translation_stiffness = false; }
     if (_late_update_rotation_stiffness) { _rotation_stiffness = _late_rotation_stiffness; _late_update_rotation_stiffness = false; }
@@ -97,6 +122,7 @@ void franka_real_time::CartesianController::_late_output_to_output()
     if (_late_update_control_rotation) { _control_rotation = _late_control_rotation; _late_update_control_rotation = false; }
     if (_late_update_joint_torques_limit) { _joint_torques_limit = _late_joint_torques_limit; _late_update_joint_torques_limit = false; }
     if (_late_update_frequency_divider) { _frequency_divider = _late_frequency_divider; _late_update_frequency_divider = false; }
+    if(_late_update_use_joint_controller ) {_use_joint_controller = _late_use_joint_controller; _late_update_use_joint_controller = false;}
 }
 
 void franka_real_time::CartesianController::_result_to_late_result()
@@ -219,15 +245,13 @@ franka_real_time::CartesianController::CartesianController(Robot *robot)
     
     //Init call count
     _call = 0;
-
     //Init constants
     _rotation_correction.setZero();
-    _rotation_correction.diagonal() << 1.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0;
+    _rotation_correction.diagonal() << 0.5, 1.0, 1.0, 0.5, 0.05, 1.0, 0.05;
     _joint_torques_maximum << 87.0, 87.0, 87.0, 87.0, 12.0, 12.0, 12.0;
 
     //Init outputs
     _robot_output_to_output();
-    
     //Technical
     if (pthread_cond_init(&_receive_condition, nullptr) != 0) throw std::runtime_error("franka_real_time: pthread_cond_init failed");
     if (pthread_cond_init(&_send_condition, nullptr) != 0) throw std::runtime_error("franka_real_time: pthread_cond_init failed");

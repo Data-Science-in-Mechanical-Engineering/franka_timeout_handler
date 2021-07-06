@@ -39,12 +39,18 @@ namespace franka_real_time
         Eigen::Matrix<double, 3, 3> _rotation_stiffness;
         Eigen::Matrix<double, 3, 3> _translation_damping;
         Eigen::Matrix<double, 3, 3> _rotation_damping;
+        Eigen::Matrix<double, 7, 1> _target_joint_position;
         bool _control_rotation;
+        bool _use_joint_controller;
         double _joint_torques_limit;
         unsigned int _frequency_divider;
+        Eigen::Matrix<double, 7, 1> _reference_joint_position;
+        int _traj_time;
+    
 
 		Update _update_timeout                  = Update::yes;
         Update _update_target_position          = Update::yes;
+        Update _update_target_joint_position    = Update::yes;
         Update _update_target_orientation       = Update::yes;
         Update _update_translation_stiffness    = Update::yes;
         Update _update_rotation_stiffness       = Update::yes;
@@ -54,6 +60,7 @@ namespace franka_real_time
         Update _update_joint_torques_limit      = Update::yes;
         Update _update_frequency_divider        = Update::yes;
 
+        Update _update_use_joint_controller_flag    = Update::yes;
         //Result
 		Eigen::Matrix<double, 7, 1> _joint_torques;
         Update _update_joint_torques         = Update::yes;
@@ -101,6 +108,8 @@ namespace franka_real_time
         void set_timeout(unsigned int timeout);
         ///Sets cartesian position of tartget (output)
         void set_target_position(Eigen::Matrix<double, 3, 1> position);
+        ///Sets joint position of target (output)
+        void set_target_joint_position(Eigen::Matrix<double, 7, 1> joint_position);
         ///Sets cartesian orientation of tartget (output)
         void set_target_orientation(Eigen::Quaterniond orientation);
         ///Sets cartesian orientation of target in Euler angles: yaw, pitch, roll (output)
@@ -125,6 +134,8 @@ namespace franka_real_time
         unsigned int get_timeout()                                  const;
         ///Returns cartesian position of tartget (output)
         Eigen::Matrix<double, 3, 1> get_target_position()           const;
+        ///Returns joint position of tartget (output)           
+        Eigen::Matrix<double, 7, 1>  get_target_joint_position()    const;
         ///Returns cartesian orientation of tartget (output)
         Eigen::Quaterniond get_target_orientation()                 const;
         ///Returns cartesian orientation of target in Euler angles: yaw, pitch, roll (output)
@@ -201,6 +212,8 @@ namespace franka_real_time
 		void set_update(Update update);
         ///Sets all output values to default
         void set_default();
+        /// Moves to reference configuration
+        void move_to_reference();
         ///Returns norm of distance between position and target
         double distance() const;
         ///Iterates till the robot reaches target with given tolerance or till time expire

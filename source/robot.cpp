@@ -123,6 +123,10 @@ void franka_real_time::Robot::set_target_position(Eigen::Matrix<double, 3, 1> po
     _target_position = position;
 }
 
+void franka_real_time::Robot::set_target_joint_position(Eigen::Matrix<double, 7, 1> joint_position){
+    _target_joint_position = joint_position;
+}
+
 void franka_real_time::Robot::set_target_orientation(Eigen::Quaterniond orientation)
 {
     _target_orientation = orientation;
@@ -181,6 +185,11 @@ unsigned int franka_real_time::Robot::get_timeout() const
 Eigen::Matrix<double, 3, 1> franka_real_time::Robot::get_target_position() const
 {
     return _target_position;
+}
+
+Eigen::Matrix<double, 7, 1> franka_real_time::Robot::get_target_joint_position() const
+{
+    return _target_joint_position;
 }
 
 Eigen::Quaterniond franka_real_time::Robot::get_target_orientation() const
@@ -373,17 +382,40 @@ void franka_real_time::Robot::set_default()
     const double translational_stiffness_constant = 100.0;
     const double rotational_stiffness_constant = 10.0;
     _timeout = 200;
+    _traj_time = 2000;
     _target_position = _position;
+    _target_joint_position = _joint_positions;
     _target_orientation = _orientation;
     _translation_stiffness = translational_stiffness_constant * Eigen::Matrix<double, 3, 3>::Identity();
     _rotation_stiffness = rotational_stiffness_constant * Eigen::Matrix<double, 3, 3>::Identity();
     _translation_damping = 2.0 * sqrt(translational_stiffness_constant) * Eigen::Matrix<double, 3, 3>::Identity();
     _rotation_damping = 2.0 * sqrt(rotational_stiffness_constant) * Eigen::Matrix<double, 3, 3>::Identity();
     _control_rotation = false;
-    _joint_torques_limit = 1.0;
+    _joint_torques_limit = 0.1;
     _frequency_divider = 1;
+    _use_joint_controller=false;
+    _reference_joint_position << 0.0196095,0.0141527,-0.0101538,-1.57401,-0.0177831,1.55137,0.831368;
 }
 
+void franka_real_time::Robot::move_to_reference(){
+
+        Eigen::Matrix<double,7,1> Next_target;
+        Next_target.setZero();
+        _use_joint_controller=true;
+        receive_and_send();
+        receive();
+        Eigen::Matrix<double,7,1> initial_joint_pose=_joint_positions;
+        double factor=1.0/_traj_time;
+        for(int i=0;i<_traj_time;i++){
+            //receive();
+            Next_target=initial_joint_pose + i*factor*(_reference_joint_position-initial_joint_pose);
+            _target_joint_position=Next_target;
+            receive_and_send();
+        }
+        _use_joint_controller=false;
+        receive_and_send();
+        //std::cout<<Next_target-_reference_joint_position<<std::endl;
+}
 double franka_real_time::Robot::distance() const
 {
     Eigen::Matrix<double, 6, 1> error;

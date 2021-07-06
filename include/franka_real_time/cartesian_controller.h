@@ -62,7 +62,9 @@ namespace franka_real_time
         Eigen::Matrix<double, 3, 3> _rotation_stiffness;
         Eigen::Matrix<double, 3, 3> _translation_damping;
         Eigen::Matrix<double, 3, 3> _rotation_damping;
+        Eigen::Matrix<double, 7, 1> _target_joint_position;
         bool _control_rotation;
+        bool _use_joint_controller;
         double _joint_torques_limit;
         unsigned int _frequency_divider;
 
@@ -75,6 +77,8 @@ namespace franka_real_time
         bool _late_update_timeout               = false;
 		Eigen::Matrix<double, 3, 1> _late_target_position;
         bool _late_update_target_position       = false;
+        Eigen::Matrix<double, 7, 1> _late_target_joint_position;
+        bool _late_update_target_joint_position       = false;
 		Eigen::Quaterniond _late_target_orientation;
         bool _late_update_target_orientation    = false;
 		Eigen::Matrix<double, 3, 3> _late_translation_stiffness;
@@ -85,13 +89,14 @@ namespace franka_real_time
         bool _late_update_translation_damping   = false;
         Eigen::Matrix<double, 3, 3> _late_rotation_damping;
         bool _late_update_rotation_damping      = false;
-        bool _late_control_rotation;
+        bool _late_control_rotation             = false;
+        bool _late_use_joint_controller         = false;
         bool _late_update_control_rotation      = false;
+        bool _late_update_use_joint_controller     = false;
         bool _late_joint_torques_limit;
         bool _late_update_joint_torques_limit   = false;
         bool _late_frequency_divider;
         bool _late_update_frequency_divider     = false;
-
         Eigen::Matrix<double, 7, 1> _late_joint_torques;
 
         //Technical
