@@ -156,7 +156,12 @@ void franka_real_time::Robot::set_translation_damping(Eigen::Matrix<double, 3, 3
 {
     _translation_damping = damping;
 }
-
+void franka_real_time::Robot::set_translation_impedance(Eigen::Matrix<double, 3, 1> impedance){
+    _translation_stiffness << Eigen::Matrix<double, 3, 3>::Identity();
+    _translation_stiffness.diagonal()<<impedance;
+    _translation_damping << Eigen::Matrix<double, 3, 3>::Identity();
+    _translation_damping.diagonal()<< 2.0 * impedance.array().sqrt();
+}
 void franka_real_time::Robot::set_rotation_damping(Eigen::Matrix<double, 3, 3> damping)
 {
     _rotation_damping = damping;
@@ -225,6 +230,11 @@ Eigen::Matrix<double, 3, 3> franka_real_time::Robot::get_translation_damping() c
 Eigen::Matrix<double, 3, 3> franka_real_time::Robot::get_rotation_damping() const
 {
     return _rotation_damping;
+}
+
+Eigen::Matrix<double, 3, 1> franka_real_time::Robot::get_translation_impedance()    const
+{
+    return _translation_stiffness.diagonal();
 }
 
 bool franka_real_time::Robot::get_control_rotation() const
@@ -410,6 +420,10 @@ void franka_real_time::Robot::move_to_reference(){
             //receive();
             Next_target=initial_joint_pose + i*factor*(_reference_joint_position-initial_joint_pose);
             _target_joint_position=Next_target;
+            receive_and_send();
+        }
+        int loop_limit = (int) round(0.2*_traj_time);
+        for(int i=0;i<loop_limit;i++){
             receive_and_send();
         }
         _use_joint_controller=false;

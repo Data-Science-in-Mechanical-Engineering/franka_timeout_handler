@@ -124,6 +124,8 @@ namespace franka_real_time
         void set_translation_damping(Eigen::Matrix<double, 3, 3> damping);
         ///Sets translation damping matrix (output)
         void set_rotation_damping(Eigen::Matrix<double, 3, 3> damping);
+        ///Returns translation impedances (output)
+        void set_translation_impedance(Eigen::Matrix<double, 3, 1> impedance);
         ///Sets indicator if rotation should be handled (output)
         void set_control_rotation(bool control);
         ///Sets security limit for torques, 1.0 to full torques (output)
@@ -150,6 +152,8 @@ namespace franka_real_time
         Eigen::Matrix<double, 3, 3> get_translation_damping()       const;
         ///Returns translation damping matrix (output)
         Eigen::Matrix<double, 3, 3> get_rotation_damping()          const;
+        ///Returns translation impedances (output)
+        Eigen::Matrix<double, 3, 1> get_translation_impedance()     const;
         ///Returns indicator if rotation should be handled (output)
         bool get_control_rotation()                                 const;
         ///Returns security limit for torques (output)

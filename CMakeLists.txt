@@ -45,6 +45,15 @@ if (pybind11_FOUND)
 	target_link_libraries(franka_real_time_cpp PUBLIC ${PYTHON_LIBRARIES})
 	target_link_libraries(franka_real_time PUBLIC franka_real_time_cpp)
 	set_target_properties(franka_real_time PROPERTIES PREFIX "")
+	CONFIGURE_FILE(python-setup-files/__init__.py
+	${CMAKE_CURRENT_BINARY_DIR}/__init__.py
+	  )
+
+	  # Ditto for the setup file.
+	  CONFIGURE_FILE(python-setup-files/setup.py
+	  ${CMAKE_CURRENT_BINARY_DIR}/setup.py
+	  )
+
 endif()
 
 ###########
