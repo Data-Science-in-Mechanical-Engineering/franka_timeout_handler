@@ -25,7 +25,10 @@ find_package(catkin REQUIRED COMPONENTS franka_control)
 
 add_library(franka_real_time_cpp SHARED
 source/cartesian_controller.cpp
-source/robot.cpp)
+source/controller.cpp
+source/joint_controller.cpp
+source/robot.cpp
+source/robot_core.cpp)
 
 target_include_directories(franka_real_time_cpp PUBLIC ${EIGEN3_INCLUDE_DIRS})
 target_include_directories(franka_real_time_cpp PUBLIC ${franka_control_INCLUDE_DIRS})
@@ -45,6 +48,8 @@ if (pybind11_FOUND)
 	target_link_libraries(franka_real_time_cpp PUBLIC ${PYTHON_LIBRARIES})
 	target_link_libraries(franka_real_time PUBLIC franka_real_time_cpp)
 	set_target_properties(franka_real_time PROPERTIES PREFIX "")
+	configure_file(source/__init__.py ${CMAKE_CURRENT_BINARY_DIR}/__init__.py)
+	configure_file(source/setup.py ${CMAKE_CURRENT_BINARY_DIR}/setup.py)
 endif()
 
 ###########

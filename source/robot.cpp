@@ -1,420 +1,109 @@
 #include "../include/franka_real_time/robot.h"
+#include "../include/franka_real_time/cartesian_controller.h"
+#include "../include/franka_real_time/joint_controller.h"
 #include <stdexcept>
 
-franka_real_time::Robot::Robot(std::string ip) : _robot(ip)
+void franka_real_time::Robot::set_translation_impedance(Eigen::Matrix<double, 3, 1> impedance)
 {
-    _robot.automaticErrorRecovery();
-    _model = new franka::Model(_robot.loadModel());
-    
-    //Initializing input
-    receive();
-
-    //Initializing output
-    set_default();
-
-    //Initializing result
-    _joint_torques.setZero();
-    _late = false;
+    _translation_stiffness.setZero();
+    _translation_stiffness.diagonal() = impedance;
+    _translation_damping.setZero();
+    _translation_damping.diagonal() = 2.0 * impedance.array().sqrt();
 }
 
-void franka_real_time::Robot::start()
+Eigen::Matrix<double, 3, 1> franka_real_time::Robot::get_translation_impedance() const
 {
-    if (_controller != nullptr) throw std::runtime_error("franka_real_time: controller was already started");
-    _controller = new CartesianController(this);
+    return _translation_stiffness.diagonal();
 }
 
-void franka_real_time::Robot::stop()
+void franka_real_time::Robot::set_rotation_impedance(Eigen::Matrix<double, 3, 1> impedance)
 {
-    if (_controller == nullptr) throw std::runtime_error("franka_real_time: controller was not started");
-    delete _controller;
-    _controller = nullptr;
+    _rotation_stiffness.setZero();
+    _rotation_stiffness.diagonal() = impedance;
+    _rotation_damping.setZero();
+    _rotation_damping.diagonal() = 2.0 * impedance.array().sqrt();
 }
 
-void franka_real_time::Robot::receive()
+Eigen::Matrix<double, 3, 1> franka_real_time::Robot::get_rotation_impedance() const
 {
-    if (_controller == nullptr)
-    {
-        franka::RobotState robot_state = _robot.readOnce();
-        Eigen::Affine3d transform(Eigen::Matrix<double, 4, 4>::Map(robot_state.O_T_EE.data()));
-        Eigen::Matrix<double, 6, 7> jacobian = Eigen::Matrix<double, 6, 7>::Map(_model->zeroJacobian(franka::Frame::kEndEffector, robot_state).data());
-        _joint_positions = Eigen::Matrix<double, 7, 1>::Map(robot_state.q.data());
-        _joint_velocities = Eigen::Matrix<double, 7, 1>::Map(robot_state.dq.data());
-        _position = transform.translation();
-        _orientation = transform.linear();
-        Eigen::Matrix<double, 6, 1> velocity_rotation = jacobian * _joint_velocities;
-        _velocity = velocity_rotation.head(3);
-        _rotation = velocity_rotation.tail(3);
-        _call = 0;
-    }
-    else _controller->receive();
+    return _rotation_stiffness.diagonal();
 }
 
-void franka_real_time::Robot::send()
+void franka_real_time::Robot::set_joint_impedance(Eigen::Matrix<double, 7, 1> impedance)
 {
-    if (_controller == nullptr) throw std::runtime_error("franka_real_time: controller was not started");
-    _controller->send();
+    _joint_stiffness.setZero();
+    _joint_stiffness.diagonal() = impedance;
+    _joint_damping.setZero();
+    _joint_damping.diagonal() = 2.0 * impedance.array().sqrt();
 }
 
-void franka_real_time::Robot::receive_and_send()
+Eigen::Matrix<double, 7, 1> franka_real_time::Robot::get_joint_impedance() const
 {
-    if (_controller == nullptr) throw std::runtime_error("franka_real_time: controller was not started");
-    _controller->receive_and_send();
-}
-
-void franka_real_time::Robot::send_and_receive()
-{
-    if (_controller == nullptr) throw std::runtime_error("franka_real_time: controller was not started");
-    _controller->send_and_receive();
-}
-
-Eigen::Matrix<double, 7, 1> franka_real_time::Robot::get_joint_positions() const
-{
-    return _joint_positions;
-}
-
-Eigen::Matrix<double, 7, 1> franka_real_time::Robot::get_joint_velocities() const
-{
-    return _joint_velocities;
-}
-
-Eigen::Matrix<double, 3, 1> franka_real_time::Robot::get_position() const
-{
-    return _position;
-}
-
-Eigen::Quaterniond franka_real_time::Robot::get_orientation() const
-{
-    return _orientation;
-}
-
-Eigen::Matrix<double, 3, 1> franka_real_time::Robot::get_orientation_euler() const
-{
-    return _orientation.toRotationMatrix().eulerAngles(2, 1, 0);
-}
-
-Eigen::Matrix<double, 4, 1> franka_real_time::Robot::get_orientation_vector() const
-{
-    return _orientation.coeffs();
-}
-
-Eigen::Matrix<double, 3, 1> franka_real_time::Robot::get_velocity() const
-{
-    return _velocity;
-}
-
-Eigen::Matrix<double, 3, 1> franka_real_time::Robot::get_rotation() const
-{
-    return _rotation;
-}
-
-
-std::uint64_t franka_real_time::Robot::get_call() const
-{
-    return _call;
-}
-
-void franka_real_time::Robot::set_timeout(unsigned int timeout)
-{
-    _timeout = timeout;
-}
-
-void franka_real_time::Robot::set_target_position(Eigen::Matrix<double, 3, 1> position)
-{
-    _target_position = position;
-}
-
-void franka_real_time::Robot::set_target_orientation(Eigen::Quaterniond orientation)
-{
-    _target_orientation = orientation;
-}
-
-void franka_real_time::Robot::set_target_orientation_euler(Eigen::Matrix<double, 3, 1> euler)
-{
-    _target_orientation = Eigen::AngleAxisd(euler(0), Eigen::Vector3d::UnitZ()) * Eigen::AngleAxisd(euler(1), Eigen::Vector3d::UnitY()) * Eigen::AngleAxisd(euler(2), Eigen::Vector3d::UnitX());
-}
-
-void franka_real_time::Robot::set_target_orientation_vector(Eigen::Matrix<double, 4, 1> xyzw)
-{
-    _target_orientation = Eigen::Quaterniond(xyzw(3), xyzw(0), xyzw(1), xyzw(2));
-}
-
-void franka_real_time::Robot::set_translation_stiffness(Eigen::Matrix<double, 3, 3> stiffness)
-{
-    _translation_stiffness = stiffness;
-}
-
-void franka_real_time::Robot::set_rotation_stiffness(Eigen::Matrix<double, 3, 3> stiffness)
-{
-    _rotation_stiffness = stiffness;
-}
-
-void franka_real_time::Robot::set_translation_damping(Eigen::Matrix<double, 3, 3> damping)
-{
-    _translation_damping = damping;
-}
-
-void franka_real_time::Robot::set_rotation_damping(Eigen::Matrix<double, 3, 3> damping)
-{
-    _rotation_damping = damping;
-}
-
-void franka_real_time::Robot::set_control_rotation(bool control)
-{
-    _control_rotation = control;
-}
-
-void franka_real_time::Robot::set_joint_torques_limit(double limit)
-{
-    _joint_torques_limit = limit;
-}
-
-void franka_real_time::Robot::set_frequency_divider(unsigned int divider)
-{
-    _frequency_divider = divider;
-}
-
-unsigned int franka_real_time::Robot::get_timeout() const
-{
-    return _timeout;
-}
-
-Eigen::Matrix<double, 3, 1> franka_real_time::Robot::get_target_position() const
-{
-    return _target_position;
-}
-
-Eigen::Quaterniond franka_real_time::Robot::get_target_orientation() const
-{
-    return _target_orientation;
-}
-
-Eigen::Matrix<double, 3, 1> franka_real_time::Robot::get_target_orientation_euler() const
-{
-    return _target_orientation.toRotationMatrix().eulerAngles(2, 1, 0);
-}
-
-Eigen::Matrix<double, 4, 1> franka_real_time::Robot::get_target_orientation_vector() const
-{
-    return _target_orientation.coeffs();
-}
-
-Eigen::Matrix<double, 3, 3> franka_real_time::Robot::get_translation_stiffness() const
-{
-    return _translation_stiffness;
-}
-
-Eigen::Matrix<double, 3, 3> franka_real_time::Robot::get_rotation_stiffness() const
-{
-    return _translation_stiffness;
-}
-
-Eigen::Matrix<double, 3, 3> franka_real_time::Robot::get_translation_damping() const
-{
-    return _translation_damping;
-}
-
-Eigen::Matrix<double, 3, 3> franka_real_time::Robot::get_rotation_damping() const
-{
-    return _rotation_damping;
-}
-
-bool franka_real_time::Robot::get_control_rotation() const
-{
-    return _control_rotation;
-}
-
-double franka_real_time::Robot::get_joint_torques_limit() const
-{
-    return _joint_torques_limit;
-}
-
-unsigned int franka_real_time::Robot::get_frequency_divider() const
-{
-    return _frequency_divider;
-}
-
-void franka_real_time::Robot::set_timeout_update(Update update)
-{
-    _update_timeout = update;
-}
-
-void franka_real_time::Robot::set_target_position_update(Update update)
-{
-    _update_target_position = update;
-}
-
-void franka_real_time::Robot::set_target_orientation_update(Update update)
-{
-    _update_target_orientation = update;
-}
-
-void franka_real_time::Robot::set_translation_stiffness_update(Update update)
-{
-    _update_translation_stiffness = update;
-}
-
-void franka_real_time::Robot::set_rotation_stiffness_update(Update update)
-{
-    _update_rotation_stiffness = update;
-}
-
-void franka_real_time::Robot::set_translation_damping_update(Update update)
-{
-    _update_translation_damping = update;
-}
-
-void franka_real_time::Robot::set_rotation_damping_update(Update update)
-{
-    _update_rotation_damping = update;
-}
-
-void franka_real_time::Robot::set_control_rotation_update(Update update)
-{
-    _update_control_rotation = update;
-}
-
-void franka_real_time::Robot::set_joint_torques_limit_update(Update update)
-{
-    _update_joint_torques_limit = update;
-}
-
-void franka_real_time::Robot::set_frequency_divider_update(Update update)
-{
-    _update_frequency_divider = update;
-}
-
-franka_real_time::Update franka_real_time::Robot::get_timeout_update() const
-{
-    return _update_timeout;
-}
-
-franka_real_time::Update franka_real_time::Robot::get_target_position_update() const
-{
-    return _update_target_position;
-}
-
-franka_real_time::Update franka_real_time::Robot::get_target_orientation_update() const
-{
-    return _update_target_orientation;
-}
-
-franka_real_time::Update franka_real_time::Robot::get_translation_stiffness_update() const
-{
-    return _update_translation_stiffness;
-}
-
-franka_real_time::Update franka_real_time::Robot::get_rotation_stiffness_update() const
-{
-    return _update_rotation_stiffness;
-}
-
-franka_real_time::Update franka_real_time::Robot::get_translation_damping_update() const
-{
-    return _update_translation_damping;
-}
-
-franka_real_time::Update franka_real_time::Robot::get_rotation_damping_update() const
-{
-    return _update_rotation_damping;
-}
-
-franka_real_time::Update franka_real_time::Robot::get_control_rotation_update() const
-{
-    return _update_control_rotation;
-}
-
-franka_real_time::Update franka_real_time::Robot::get_joint_torques_limit_update() const
-{
-    return _update_joint_torques_limit;
-}
-
-franka_real_time::Update franka_real_time::Robot::get_frequency_divider_update() const
-{
-    return _update_frequency_divider;
-}
-
-Eigen::Matrix<double, 7, 1> franka_real_time::Robot::get_joint_torques() const
-{
-    return _joint_torques;
-}
-
-bool franka_real_time::Robot::get_late() const
-{
-    return _late;
-}
-
-void franka_real_time::Robot::set_joint_torques_update(Update update)
-{
-    _update_joint_torques = update;
-}
-
-franka_real_time::Update franka_real_time::Robot::get_joint_torques_update() const
-{
-    return _update_joint_torques;
+    return _joint_stiffness.diagonal();
 }
 
 void franka_real_time::Robot::set_update(Update update)
 {
+    _update_joint_torques = update;
     _update_timeout = update;
+    _update_joint_torques_limit = update;
+    _update_frequency_divider = update;
     _update_target_position = update;
     _update_translation_stiffness = update;
     _update_rotation_stiffness = update;
     _update_translation_damping = update;
     _update_rotation_damping = update;
     _update_control_rotation = update;
-    _update_joint_torques_limit = update;
-    _update_frequency_divider = update;
-    _update_joint_torques = update;
+    _update_target_joint_positions = update;
+    _update_joint_stiffness = update;
+    _update_joint_damping = update;
 }
 
 void franka_real_time::Robot::set_default()
 {
-    receive(); //For position and orientation
-    const double translational_stiffness_constant = 100.0;
-    const double rotational_stiffness_constant = 10.0;
-    _timeout = 200;
+    Controller::set_default(this);
+    CartesianController::set_default(this);
+    JointController::set_default(this);
+}
+
+void franka_real_time::Robot::set_current()
+{
+    receive();
     _target_position = _position;
     _target_orientation = _orientation;
-    _translation_stiffness = translational_stiffness_constant * Eigen::Matrix<double, 3, 3>::Identity();
-    _rotation_stiffness = rotational_stiffness_constant * Eigen::Matrix<double, 3, 3>::Identity();
-    _translation_damping = 2.0 * sqrt(translational_stiffness_constant) * Eigen::Matrix<double, 3, 3>::Identity();
-    _rotation_damping = 2.0 * sqrt(rotational_stiffness_constant) * Eigen::Matrix<double, 3, 3>::Identity();
-    _control_rotation = false;
-    _joint_torques_limit = 1.0;
-    _frequency_divider = 1;
+    _target_joint_positions = _joint_positions;
 }
 
-double franka_real_time::Robot::distance() const
+void franka_real_time::Robot::loop_to_default(unsigned int iterations)
 {
-    Eigen::Matrix<double, 6, 1> error;
-    error.setZero();
-
-    //Position
-    error.head(3) = _position - _target_position;
-
-    //Orientation
-    if (_control_rotation)
+    if (_controller == nullptr) throw std::runtime_error("franka_real_time: controller was not started");
+    receive();
+    set_default();
+    if (_controller->typ())
     {
-        Eigen::Quaterniond orient = _orientation;
-        if (_target_orientation.coeffs().dot(orient.coeffs()) < 0.0) orient.coeffs() = -orient.coeffs();
-        Eigen::Quaterniond orientation_error = orient.inverse() * _target_orientation;
-        error.tail(3) << orientation_error.x(), orientation_error.y(), orientation_error.z();
+        Eigen::Matrix<double, 7, 1> initial_target = _joint_positions;
+        Eigen::Matrix<double, 7, 1> final_target = _target_joint_positions;
+        for (unsigned int i = 0; i < iterations; i++)
+        {
+            _target_joint_positions = (initial_target * (iterations - i - 1) + final_target * i) / (iterations - 1);
+            receive_and_send();
+        }
     }
-
-    return error.norm();
-}
-
-void franka_real_time::Robot::loop(double tolerance, unsigned int iterations)
-{
-    receive_and_send();
-    for (unsigned int i = 0; i < iterations; i++)
+    else
     {
-        if (distance() <= tolerance) break;
-        receive();
+        Eigen::Matrix<double, 3, 1> initial_position_target = _position;
+        Eigen::Quaterniond initial_orientation_target = _orientation;
+        Eigen::Matrix<double, 3, 1> final_position_target = _target_position;
+        Eigen::Quaterniond final_orientation_target = _target_orientation;
+        for (unsigned int i = 0; i < iterations; i++)
+        {
+            _target_position = (initial_position_target * (iterations - i - 1) + final_position_target * i) / (iterations - 1);
+            _target_orientation = initial_orientation_target.slerp((double) i / (iterations - 1), final_orientation_target);
+            receive_and_send();
+        }    
     }
-}
-
-franka_real_time::Robot::~Robot()
-{
-    if (_controller != nullptr) delete _controller;
+    for (unsigned int i = 0; i < iterations / 5; i++)
+    {
+        receive_and_send();
+    }
 }

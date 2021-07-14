@@ -10,7 +10,8 @@ int _main(int argc, char **argv)
     }
 
     franka_real_time::Robot robot(argv[1]);
-    robot.start();
+    robot.start(false);
+    robot.set_current();
     while (true)
     {
         robot.receive();
