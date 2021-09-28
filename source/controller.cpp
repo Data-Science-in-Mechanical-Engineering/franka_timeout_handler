@@ -1,8 +1,9 @@
-#include "../include/franka_real_time/controller.h"
-#include "../include/franka_real_time/robot_core.h"
+#include "../include/franka_timeout_handler/controller.h"
+#include "../include/franka_timeout_handler/robot_core.h"
+#include "../include/franka_timeout_handler/constants.h"
 #include <stdexcept>
 
-void franka_real_time::Controller::_state_to_input(const franka::RobotState &robot_state)
+void franka_timeout_handler::Controller::_state_to_input(const franka::RobotState &robot_state)
 {
     _joint_positions = Eigen::Matrix<double, 7, 1>::Map(robot_state.q.data());
     _joint_velocities = Eigen::Matrix<double, 7, 1>::Map(robot_state.dq.data());
@@ -13,7 +14,7 @@ void franka_real_time::Controller::_state_to_input(const franka::RobotState &rob
     _velocity_rotation = _jacobian * _joint_velocities;
 }
 
-void franka_real_time::Controller::_input_to_robot_input()
+void franka_timeout_handler::Controller::_input_to_robot_input()
 {
     _robot->_joint_positions = _joint_positions;
     _robot->_joint_velocities = _joint_velocities;
@@ -24,48 +25,48 @@ void franka_real_time::Controller::_input_to_robot_input()
     _robot->_call = _call;
 }
 
-void franka_real_time::Controller::_calculate_temporary(const franka::RobotState &robot_state)
+void franka_timeout_handler::Controller::_calculate_temporary(const franka::RobotState &robot_state)
 {
     _coriolis = Eigen::Matrix<double, 7, 1>::Map(_robot->_model->coriolis(robot_state).data());
 }
 
-void franka_real_time::Controller::_robot_output_to_output()
+void franka_timeout_handler::Controller::_robot_output_to_output()
 {
-    if (_robot->_update_timeout != Update::no) _timeout = _robot->_timeout;
-    if (_robot->_update_joint_torques_limit != Update::no) _joint_torques_limit = _robot->_joint_torques_limit;
-    if (_robot->_update_frequency_divider != Update::no) _frequency_divider = _robot->_frequency_divider;
+    if (_robot->_update_timeout != Update::never) _timeout = _robot->_timeout;
+    if (_robot->_update_joint_torques_limit != Update::never) _joint_torques_limit = _robot->_joint_torques_limit;
+    if (_robot->_update_frequency_divider != Update::never) _frequency_divider = _robot->_frequency_divider;
 }
 
-void franka_real_time::Controller::_result_to_robot_result()
+void franka_timeout_handler::Controller::_result_to_robot_result()
 {
-    if (_robot->_update_joint_torques != Update::no) _robot->_joint_torques = _joint_torques;
+    if (_robot->_update_joint_torques != Update::never) _robot->_joint_torques = _joint_torques;
 }
 
-void franka_real_time::Controller::_robot_output_to_late_output()
+void franka_timeout_handler::Controller::_robot_output_to_late_output()
 {
-    if (_robot->_update_timeout == Update::yes) { _late_timeout = _robot->_timeout; _late_update_timeout = true; }
-    if (_robot->_update_joint_torques_limit == Update::yes) { _late_joint_torques_limit = _robot->_joint_torques_limit; _late_update_joint_torques_limit = true; }
-    if (_robot->_update_frequency_divider == Update::yes) { _late_frequency_divider = _robot->_frequency_divider; _late_update_frequency_divider = true; }
+    if (_robot->_update_timeout == Update::always) { _late_timeout = _robot->_timeout; _late_update_timeout = true; }
+    if (_robot->_update_joint_torques_limit == Update::always) { _late_joint_torques_limit = _robot->_joint_torques_limit; _late_update_joint_torques_limit = true; }
+    if (_robot->_update_frequency_divider == Update::always) { _late_frequency_divider = _robot->_frequency_divider; _late_update_frequency_divider = true; }
 }
 
-void franka_real_time::Controller::_late_output_to_output()
+void franka_timeout_handler::Controller::_late_output_to_output()
 {
     if (_late_update_timeout) { _timeout = _late_timeout; _late_update_timeout = false; }
     if (_late_update_joint_torques_limit) { _joint_torques_limit = _late_joint_torques_limit; _late_update_joint_torques_limit = false; }
     if (_late_update_frequency_divider) { _frequency_divider = _late_frequency_divider; _late_update_frequency_divider = false; }
 }
 
-void franka_real_time::Controller::_result_to_late_result()
+void franka_timeout_handler::Controller::_result_to_late_result()
 {
     _late_joint_torques = _joint_torques;
 }
 
-void franka_real_time::Controller::_late_result_to_robot_result()
+void franka_timeout_handler::Controller::_late_result_to_robot_result()
 {
-    if (_robot->_update_joint_torques == Update::yes) _robot->_joint_torques = _joint_torques;
+    if (_robot->_update_joint_torques == Update::always) _robot->_joint_torques = _joint_torques;
 }
 
-void franka_real_time::Controller::_control(const franka::RobotState &robot_state)
+void franka_timeout_handler::Controller::_control(const franka::RobotState &robot_state)
 {
     _call++;
     
@@ -169,48 +170,49 @@ void franka_real_time::Controller::_control(const franka::RobotState &robot_stat
     }
 }
 
-franka_real_time::Controller::Controller(RobotCore *robot_core)
+franka_timeout_handler::Controller::Controller(RobotCore *robot_core)
 {
     _robot = robot_core;
     
     //Init call count
     _call = 0;
-    
-    //Init security
-    _joint_torques_maximum << 87.0, 87.0, 87.0, 87.0, 12.0, 12.0, 12.0;
 
     //Init outputs
     _robot_output_to_output();
 
     //Technical
-    if (pthread_cond_init(&_receive_condition, nullptr) != 0) throw std::runtime_error("franka_real_time: pthread_cond_init failed");
-    if (pthread_cond_init(&_send_condition, nullptr) != 0) throw std::runtime_error("franka_real_time: pthread_cond_init failed");
-    if (pthread_mutex_init(&_mutex, nullptr) != 0) throw std::runtime_error("franka_real_time: pthread_mutex_init failed");
+    if (pthread_cond_init(&_receive_condition, nullptr) != 0) throw std::runtime_error("franka_timeout_handler: pthread_cond_init failed");
+    if (pthread_cond_init(&_send_condition, nullptr) != 0) throw std::runtime_error("franka_timeout_handler: pthread_cond_init failed");
+    if (pthread_mutex_init(&_mutex, nullptr) != 0) throw std::runtime_error("franka_timeout_handler: pthread_mutex_init failed");
     pthread_attr_t pthread_attributes;
-    if (pthread_attr_init(&pthread_attributes) != 0) throw std::runtime_error("franka_real_time: pthread_attr_init failed");;
-    if (pthread_attr_setschedpolicy(&pthread_attributes, SCHED_FIFO) != 0) throw std::runtime_error("franka_real_time: pthread_attr_setschedpolicy failed");
+    if (pthread_attr_init(&pthread_attributes) != 0) throw std::runtime_error("franka_timeout_handler: pthread_attr_init failed");;
+    if (pthread_attr_setschedpolicy(&pthread_attributes, SCHED_FIFO) != 0) throw std::runtime_error("franka_timeout_handler: pthread_attr_setschedpolicy failed");
     sched_param scheduling_parameters;
     scheduling_parameters.sched_priority = 90;
-    if (pthread_attr_setschedparam(&pthread_attributes, &scheduling_parameters) != 0) throw std::runtime_error("franka_real_time: pthread_attr_setschedparam failed");;;
-    if (pthread_attr_setinheritsched(&pthread_attributes, PTHREAD_EXPLICIT_SCHED) != 0) throw std::runtime_error("franka_real_time: pthread_attr_setinheritsched failed");;;
+    if (pthread_attr_setschedparam(&pthread_attributes, &scheduling_parameters) != 0) throw std::runtime_error("franka_timeout_handler: pthread_attr_setschedparam failed");;;
+    if (pthread_attr_setinheritsched(&pthread_attributes, PTHREAD_EXPLICIT_SCHED) != 0) throw std::runtime_error("franka_timeout_handler: pthread_attr_setinheritsched failed");;;
     if (pthread_create(&_backend_thread, &pthread_attributes, [](void* controller) -> void*
     {
         ((Controller*)controller)->_robot->_robot.control([controller](const franka::RobotState &robot_state, franka::Duration duration) -> franka::Torques
         {
+            //Calculate
             ((Controller*)controller)->_control(robot_state);
-            //Security
-            //Eigen::Array<double, 7, 1> limits = (_joint_torques_limit * _joint_torques_maximum.array() / _joint_torques.array()).abs();
-            //if (limits.minCoeff() < 1.0) _joint_torques *= limits.minCoeff();
+            
+            //Apply security
+            Eigen::Array<double, 7, 1> limits = (((Controller*)controller)->_joint_torques_limit * max_joint_torque.array() / ((Controller*)controller)->_joint_torques.array()).abs();
+            if (limits.minCoeff() < 1.0) ((Controller*)controller)->_joint_torques *= limits.minCoeff();  
+            
+            //Return
             franka::Torques joint_torques{0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
             Eigen::Matrix<double, 7, 1>::Map(&joint_torques.tau_J[0]) = ((Controller*)controller)->_joint_torques;
             joint_torques.motion_finished = ((Controller*)controller)->_joint_torques_finished;
             return joint_torques;
         });
         return nullptr;
-    }, this) != 0) throw std::runtime_error("franka_real_time: pthread_create failed");
+    }, this) != 0) throw std::runtime_error("franka_timeout_handler: pthread_create failed");
 }
 
-void franka_real_time::Controller::receive()
+void franka_timeout_handler::Controller::receive()
 {
     pthread_mutex_lock(&_mutex);
     _receive_state = ReceiveState::receive;
@@ -219,7 +221,7 @@ void franka_real_time::Controller::receive()
     pthread_mutex_unlock(&_mutex);
 }
 		
-void franka_real_time::Controller::send()
+void franka_timeout_handler::Controller::send()
 {
     pthread_mutex_lock(&_mutex);
     bool error = _receive_state != ReceiveState::post_receive;
@@ -252,10 +254,10 @@ void franka_real_time::Controller::send()
     }
     pthread_mutex_unlock(&_mutex);
 
-    if (error) throw std::runtime_error("franka_real_time: Controller did not call receive()");
+    if (error) throw std::runtime_error("franka_timeout_handler: Controller did not call receive()");
 }
 
-void franka_real_time::Controller::receive_and_send()
+void franka_timeout_handler::Controller::receive_and_send()
 {
     pthread_mutex_lock(&_mutex);
     _receive_state = ReceiveState::receive_and_send;
@@ -264,13 +266,13 @@ void franka_real_time::Controller::receive_and_send()
     pthread_mutex_unlock(&_mutex);
 }
 
-void franka_real_time::Controller::send_and_receive()
+void franka_timeout_handler::Controller::send_and_receive()
 {
     send();
     receive();
 }
 
-franka_real_time::Controller::~Controller()
+franka_timeout_handler::Controller::~Controller()
 {
     pthread_mutex_lock(&_mutex);
     _receive_state = ReceiveState::destructor;
@@ -282,11 +284,4 @@ franka_real_time::Controller::~Controller()
     pthread_cond_destroy(&_receive_condition);
     pthread_cond_destroy(&_send_condition);
     pthread_mutex_destroy(&_mutex);
-}
-
-void franka_real_time::Controller::set_default(RobotCore *robot_core)
-{
-    robot_core->_timeout = 200;
-    robot_core->_joint_torques_limit = 0.1;
-    robot_core->_frequency_divider = 1;
 }

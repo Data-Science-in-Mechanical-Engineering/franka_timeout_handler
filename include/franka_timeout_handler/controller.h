@@ -1,11 +1,12 @@
 #pragma once
 
+#include "controller_type.h"
 #include <franka/robot.h>
 #include <Eigen/Dense>
 #include <thread>
 #include <cstdint>
 
-namespace franka_real_time
+namespace franka_timeout_handler
 {
     class RobotCore;
     class Robot;
@@ -90,7 +91,7 @@ namespace franka_real_time
         virtual void _result_to_late_result();
         virtual void _late_result_to_robot_result();
 
-        virtual bool typ() = 0;
+        virtual ControllerType typ() const = 0;
 
         //Main functionality, can not be overloaded
         void _control(const franka::RobotState &robot_state);
@@ -100,6 +101,5 @@ namespace franka_real_time
 		void send_and_receive();
         Controller(RobotCore *robot_core);
         ~Controller();
-        static void set_default(RobotCore *robot_core);
     };
 }

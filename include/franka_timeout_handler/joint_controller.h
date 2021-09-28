@@ -7,7 +7,7 @@
 #include <thread>
 #include <cstdint>
 
-namespace franka_real_time
+namespace franka_timeout_handler
 {
     class RobotCore;
     class Robot;
@@ -16,7 +16,6 @@ namespace franka_real_time
 	class JointController : public Controller
 	{
     friend RobotCore;
-    friend Robot;
     private:
         //Output
         Eigen::Matrix<double, 7, 1> _target_joint_positions;
@@ -36,8 +35,7 @@ namespace franka_real_time
         virtual void _calculate_result();
         virtual void _robot_output_to_late_output();
         virtual void _late_output_to_output();
-        virtual bool typ();
-		using Controller::Controller;
-        static void set_default(RobotCore *robot_core);
+        virtual ControllerType typ() const;
+        using Controller::Controller;
 	};
 }

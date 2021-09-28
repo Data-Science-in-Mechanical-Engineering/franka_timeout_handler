@@ -2,6 +2,8 @@
 
 #include "update.h"
 #include "controller.h"
+#include "controller_type.h"
+#include "constants.h"
 #include <thread>
 #include <cstdint>
 #include <franka/robot.h>
@@ -9,19 +11,19 @@
 #include <Eigen/Dense>
 #include <Eigen/Geometry>
 
-namespace franka_real_time
+namespace franka_timeout_handler
 {
     class Controller;
     class CartesianController;
     class JointController;
 
-	///Franka Panda robot
+	///Franka Emika Panda robot
 	class RobotCore
 	{
     friend Controller;
     friend CartesianController;
     friend JointController;
-    protected:
+    private:
         franka::Robot _robot;
         franka::Model *_model = nullptr;
         Controller *_controller = nullptr;
@@ -36,38 +38,38 @@ namespace franka_real_time
         std::uint64_t _call;
 
         //Output
-        unsigned int _timeout;
-        double _joint_torques_limit;
-        unsigned int _frequency_divider;
-        Eigen::Matrix<double, 3, 1> _target_position;
-        Eigen::Quaterniond _target_orientation;
-        Eigen::Matrix<double, 3, 3> _translation_stiffness;
-        Eigen::Matrix<double, 3, 3> _rotation_stiffness;
-        Eigen::Matrix<double, 3, 3> _translation_damping;
-        Eigen::Matrix<double, 3, 3> _rotation_damping;
-        bool _control_rotation;
-        Eigen::Matrix<double, 7, 1> _target_joint_positions;
-        Eigen::Matrix<double, 7, 7> _joint_stiffness;
-        Eigen::Matrix<double, 7, 7> _joint_damping;
+        unsigned int _timeout                               = default_timeout;
+        double _joint_torques_limit                         = default_torques_limit;
+        unsigned int _frequency_divider                     = default_frequency_divider;
+        Eigen::Matrix<double, 3, 1> _target_position;       //Read from robot by default
+        Eigen::Quaterniond _target_orientation;             //Read from robot by default
+        Eigen::Matrix<double, 3, 3> _translation_stiffness  = default_translation_stiffness;
+        Eigen::Matrix<double, 3, 3> _rotation_stiffness     = default_rotation_stiffness;
+        Eigen::Matrix<double, 3, 3> _translation_damping    = default_translation_damping;
+        Eigen::Matrix<double, 3, 3> _rotation_damping       = default_rotation_damping;
+        bool _control_rotation                              = default_control_rotation;
+        Eigen::Matrix<double, 7, 1> _target_joint_positions;//Read from robot by default
+        Eigen::Matrix<double, 7, 7> _joint_stiffness        = default_joint_stiffness;
+        Eigen::Matrix<double, 7, 7> _joint_damping          = default_joint_damping;
 
-		Update _update_timeout                  = Update::yes;
-        Update _update_joint_torques_limit      = Update::yes;
-        Update _update_frequency_divider        = Update::yes;
-        Update _update_target_position          = Update::yes;
-        Update _update_target_orientation       = Update::yes;
-        Update _update_translation_stiffness    = Update::yes;
-        Update _update_rotation_stiffness       = Update::yes;
-        Update _update_translation_damping      = Update::yes;
-        Update _update_rotation_damping         = Update::yes;
-        Update _update_control_rotation         = Update::yes;
-        Update _update_target_joint_positions   = Update::yes;
-        Update _update_joint_stiffness          = Update::yes;
-        Update _update_joint_damping            = Update::yes;
+		Update _update_timeout                  = default_update;
+        Update _update_joint_torques_limit      = default_update;
+        Update _update_frequency_divider        = default_update;
+        Update _update_target_position          = default_update;
+        Update _update_target_orientation       = default_update;
+        Update _update_translation_stiffness    = default_update;
+        Update _update_rotation_stiffness       = default_update;
+        Update _update_translation_damping      = default_update;
+        Update _update_rotation_damping         = default_update;
+        Update _update_control_rotation         = default_update;
+        Update _update_target_joint_positions   = default_update;
+        Update _update_joint_stiffness          = default_update;
+        Update _update_joint_damping            = default_update;
         
         //Result
-		Eigen::Matrix<double, 7, 1> _joint_torques;
-        Update _update_joint_torques         = Update::yes;
-		bool _late                           = false;
+		Eigen::Matrix<double, 7, 1> _joint_torques  = Eigen::Matrix<double, 7, 1>::Zero();
+        Update _update_joint_torques                = default_update;
+		bool _late                                  = false;
 
 	public:
         //Basic:
@@ -75,10 +77,14 @@ namespace franka_real_time
         ///@param ip IPv4 address of the robot
 		RobotCore(std::string ip);
         ///Starts controller
-        ///@param joint If `true`, starts joint controller. If `false`, starts cartesian controller
-        void start(bool joint);
+        ///@param typ Type of controller
+        void start(ControllerType typ);
         ///Stops controller
         void stop();
+        ///Returns if controller is started
+        bool started() const;
+        ///Returns type of controller
+        ControllerType typ() const;
 		///Waits for next signal (if controller is running) and refreshes inputs
 		void receive();
 		///Sends signal back, updates outputs, refreshes results
@@ -100,7 +106,7 @@ namespace franka_real_time
         ///Returns cartesian orientation in Euler angles: yaw, pitch, roll (input)
         Eigen::Matrix<double, 3, 1> get_orientation_euler() const;
         ///Returns cartesian orientation as quanterion, but in XYZW form (output)
-        Eigen::Matrix<double, 4, 1> get_orientation_vector() const;
+        Eigen::Matrix<double, 4, 1> get_orientation_wxyz()  const;
 		///Returns cartesian velocity (input)
 		Eigen::Matrix<double, 3, 1> get_velocity()          const;
         ///Returns cartesian rotation (input)
@@ -116,29 +122,29 @@ namespace franka_real_time
         ///Sets frequency divider (output)
         void set_frequency_divider(unsigned int divider);
         ///Sets cartesian position of tartget (output, cartesian only)
-        void set_target_position(Eigen::Matrix<double, 3, 1> position);
+        void set_target_position(const Eigen::Matrix<double, 3, 1> &position);
         ///Sets cartesian orientation of tartget (output, cartesian only)
-        void set_target_orientation(Eigen::Quaterniond orientation);
+        void set_target_orientation(const Eigen::Quaterniond &orientation);
         ///Sets cartesian orientation of target in Euler angles: yaw, pitch, roll (output, cartesian only)
-        void set_target_orientation_euler(Eigen::Matrix<double, 3, 1> euler);
+        void set_target_orientation_euler(const Eigen::Matrix<double, 3, 1> &euler);
         ///Sets cartesian orientation of target as quanterion, but in XYZW form (output, cartesian only)
-        void set_target_orientation_vector(Eigen::Matrix<double, 4, 1> xyzw);
+        void set_target_orientation_wxyz(const Eigen::Matrix<double, 4, 1> &wxyz);
         ///Sets translation stiffness matrix (output, cartesian only)
-        void set_translation_stiffness(Eigen::Matrix<double, 3, 3> stiffness);
+        void set_translation_stiffness(const Eigen::Matrix<double, 3, 3> &stiffness);
         ///Sets rotation stiffness matrix (output, cartesian only)
-        void set_rotation_stiffness(Eigen::Matrix<double, 3, 3> stiffness);
+        void set_rotation_stiffness(const Eigen::Matrix<double, 3, 3> &stiffness);
         ///Sets translation damping matrix (output, cartesian only)
-        void set_translation_damping(Eigen::Matrix<double, 3, 3> damping);
+        void set_translation_damping(const Eigen::Matrix<double, 3, 3> &damping);
         ///Sets translation damping matrix (output, cartesian only)
-        void set_rotation_damping(Eigen::Matrix<double, 3, 3> damping);
+        void set_rotation_damping(const Eigen::Matrix<double, 3, 3> &damping);
         ///Sets indicator if rotation should be handled (output, cartesian only)
         void set_control_rotation(bool control);
         ///Sets joint-space target (output, joint only)
-        void set_target_joint_positions(Eigen::Matrix<double, 7, 1> positions);
+        void set_target_joint_positions(const Eigen::Matrix<double, 7, 1> &positions);
         ///Sets joint-space stiffness matrix (output, joint only)
-        void set_joint_stiffness(Eigen::Matrix<double, 7, 7> stiffness);
+        void set_joint_stiffness(const Eigen::Matrix<double, 7, 7> &stiffness);
         ///Sets joint-space damping matrix (output, joint only)
-        void set_joint_damping(Eigen::Matrix<double, 7, 7> damping);
+        void set_joint_damping(const Eigen::Matrix<double, 7, 7> &damping);
         ///Returns timeout in microsencods (output)
         unsigned int get_timeout()                                  const;
         ///Returns security limit for torques (output)
@@ -152,7 +158,7 @@ namespace franka_real_time
         ///Returns cartesian orientation of target in Euler angles: yaw, pitch, roll (output, cartesian only)
         Eigen::Matrix<double, 3, 1> get_target_orientation_euler()  const;
         ///Returns cartesian orientation of target as quanterion, but in XYZW form (output, cartesian only)
-        Eigen::Matrix<double, 4, 1> get_target_orientation_vector() const;
+        Eigen::Matrix<double, 4, 1> get_target_orientation_wxyz()   const;
         ///Returns translation stiffness matrix (output, cartesian only)
         Eigen::Matrix<double, 3, 3> get_translation_stiffness()     const;
         ///Returns rotation stiffness matrix (output, cartesian only)

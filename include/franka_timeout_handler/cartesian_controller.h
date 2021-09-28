@@ -4,7 +4,7 @@
 #include <Eigen/Dense>
 #include <Eigen/Geometry>
 
-namespace franka_real_time
+namespace franka_timeout_handler
 {
     class RobotCore;
     class Robot;
@@ -13,7 +13,6 @@ namespace franka_real_time
 	class CartesianController : public Controller
 	{
     friend RobotCore;
-    friend Robot;
     private:
         //Output
         Eigen::Matrix<double, 3, 1> _target_position;
@@ -40,16 +39,12 @@ namespace franka_real_time
         bool _late_control_rotation;
         bool _late_update_control_rotation      = false;
 
-        //Rotation correction (magical numbers, need to be fixed)
-        Eigen::Matrix<double, 7, 7> _rotation_correction;
-
         //Overloadings
         virtual void _robot_output_to_output();
         virtual void _calculate_result();
         virtual void _robot_output_to_late_output();
         virtual void _late_output_to_output();
-        virtual bool typ();
-		CartesianController(RobotCore *robot_core);
-        static void set_default(RobotCore *robot_core);
+        virtual ControllerType typ() const;
+		using Controller::Controller;
 	};
 }
