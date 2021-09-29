@@ -1,11 +1,12 @@
 #include "../include/franka_timeout_handler/robot.h"
 #include "../include/franka_timeout_handler/gripper.h"
+#include "../include/franka_timeout_handler/version.h"
 #include <pybind11/pybind11.h>
 #include <pybind11/eigen.h>
 
 PYBIND11_MODULE(franka_timeout_handler, m)
 {
-    m.doc() = "franka_timeout_handler " + std::to_string(franka_o80::version_major) + "." + std::to_string(franka_o80::version_minor) + "." + std::to_string(franka_o80::version_patch) +
+    m.doc() = "franka_timeout_handler " + std::to_string(franka_timeout_handler::version_major) + "." + std::to_string(franka_timeout_handler::version_minor) + "." + std::to_string(franka_timeout_handler::version_patch) +
     " is a library for Franka Emika Panda robot, which allows you to send messages to real-time controller from non-real-time application without breaking robot's real-time requirements";
 
     //constants.h
