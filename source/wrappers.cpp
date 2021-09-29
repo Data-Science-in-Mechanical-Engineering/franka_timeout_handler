@@ -1,19 +1,47 @@
 #include "../include/franka_timeout_handler/robot.h"
+#include "../include/franka_timeout_handler/gripper.h"
 #include <pybind11/pybind11.h>
 #include <pybind11/eigen.h>
 
 PYBIND11_MODULE(franka_timeout_handler, m)
 {
-    //update.h
-    pybind11::enum_<franka_timeout_handler::Update>(m, "Update")
-    .value("never", franka_timeout_handler::Update::never)
-    .value("always", franka_timeout_handler::Update::always)
-    .value("if_not_late", franka_timeout_handler::Update::if_not_late);
+    //constants.h
+    m.def("default_timeout",                    []() -> unsigned int                    { return franka_timeout_handler::default_timeout; });
+    m.def("default_torques_limit",              []() -> double                          { return franka_timeout_handler::default_torques_limit; });
+    m.def("default_frequency_divider",          []() -> unsigned int                    { return franka_timeout_handler::default_frequency_divider; });
+    m.def("default_target_position",            []() -> Eigen::Matrix<double, 3, 1>     { return franka_timeout_handler::default_target_position; });
+    m.def("default_target_orientation",         []() -> Eigen::Quaterniond              { return franka_timeout_handler::default_target_orientation; });
+    m.def("default_target_orientation_euler",   []() -> Eigen::Matrix<double, 3, 1>     { return franka_timeout_handler::default_target_orientation_euler; });
+    m.def("default_target_orientation_wxyz",    []() -> Eigen::Matrix<double, 4, 1>     { return franka_timeout_handler::default_target_orientation_wxyz; });
+    m.def("default_translation_stiffness",      []() -> Eigen::Matrix<double, 3, 3>     { return franka_timeout_handler::default_translation_stiffness; });
+    m.def("default_rotation_stiffness",         []() -> Eigen::Matrix<double, 3, 3>     { return franka_timeout_handler::default_rotation_stiffness; });
+    m.def("default_translation_damping",        []() -> Eigen::Matrix<double, 3, 3>     { return franka_timeout_handler::default_translation_damping; });
+    m.def("default_rotation_damping",           []() -> Eigen::Matrix<double, 3, 3>     { return franka_timeout_handler::default_rotation_damping; });
+    m.def("default_control_rotation",           []() -> bool                            { return franka_timeout_handler::default_control_rotation; });
+    m.def("default_target_joint_positions",     []() -> Eigen::Matrix<double, 7, 1>     { return franka_timeout_handler::default_target_joint_positions; });
+    m.def("default_joint_stiffness",            []() -> Eigen::Matrix<double, 7, 7>     { return franka_timeout_handler::default_joint_stiffness; });
+    m.def("default_joint_damping",              []() -> Eigen::Matrix<double, 7, 7>     { return franka_timeout_handler::default_joint_damping; });
+    m.def("default_update",                     []() -> franka_timeout_handler::Update  { return franka_timeout_handler::default_update; });
+    m.def("max_joint_torque",                   []() -> Eigen::Matrix<double, 7, 1>     { return franka_timeout_handler::max_joint_torque; });
 
     //controller_type.h
     pybind11::enum_<franka_timeout_handler::ControllerType>(m, "ControllerType")
-    .value("cartesian", franka_timeout_handler::ControllerType::cartesian)
-    .value("joint", franka_timeout_handler::ControllerType::joint);
+        .value("cartesian", franka_timeout_handler::ControllerType::cartesian)
+        .value("joint", franka_timeout_handler::ControllerType::joint);
+
+    //gripper.h
+    pybind11::class_<franka_timeout_handler::Gripper>(m, "Gripper")
+        .def(pybind11::init<std::string>())
+        .def("homing",          &franka_timeout_handler::Gripper::homing)
+        .def("get_width",       &franka_timeout_handler::Gripper::get_width)
+        .def("get_grasped",     &franka_timeout_handler::Gripper::get_grasped)
+        .def("get_temperature", &franka_timeout_handler::Gripper::get_temperature)
+        .def("move",            &franka_timeout_handler::Gripper::move, pybind11::arg("width"), pybind11::arg("speed"))
+        .def("grasp",           &franka_timeout_handler::Gripper::grasp, pybind11::arg("width"), pybind11::arg("speed"), pybind11::arg("force"), pybind11::arg("epsilon_inner") = 0.005, pybind11::arg("epsilon_outer") = 0.005)
+        .def("async_started",   &franka_timeout_handler::Gripper::async_started)
+        .def("async_wait",      &franka_timeout_handler::Gripper::async_wait)
+        .def("async_move",      &franka_timeout_handler::Gripper::async_move, pybind11::arg("width"), pybind11::arg("speed"))
+        .def("async_grasp",     &franka_timeout_handler::Gripper::async_grasp, pybind11::arg("width"), pybind11::arg("speed"), pybind11::arg("force"), pybind11::arg("epsilon_inner") = 0.005, pybind11::arg("epsilon_outer") = 0.005);
 
     //robot_core.h
     pybind11::class_<franka_timeout_handler::RobotCore>(m, "RobotCore")
@@ -118,22 +146,9 @@ PYBIND11_MODULE(franka_timeout_handler, m)
         .def("set_current_targets",         &franka_timeout_handler::Robot::set_current_targets)
         .def("distance",                    &franka_timeout_handler::Robot::distance);
 
-    //constants.h
-    m.def("default_timeout",                    []() -> unsigned int                    { return franka_timeout_handler::default_timeout; });
-    m.def("default_torques_limit",              []() -> double                          { return franka_timeout_handler::default_torques_limit; });
-    m.def("default_frequency_divider",          []() -> unsigned int                    { return franka_timeout_handler::default_frequency_divider; });
-    m.def("default_target_position",            []() -> Eigen::Matrix<double, 3, 1>     { return franka_timeout_handler::default_target_position; });
-    m.def("default_target_orientation",         []() -> Eigen::Quaterniond              { return franka_timeout_handler::default_target_orientation; });
-    m.def("default_target_orientation_euler",   []() -> Eigen::Matrix<double, 3, 1>     { return franka_timeout_handler::default_target_orientation_euler; });
-    m.def("default_target_orientation_wxyz",    []() -> Eigen::Matrix<double, 4, 1>     { return franka_timeout_handler::default_target_orientation_wxyz; });
-    m.def("default_translation_stiffness",      []() -> Eigen::Matrix<double, 3, 3>     { return franka_timeout_handler::default_translation_stiffness; });
-    m.def("default_rotation_stiffness",         []() -> Eigen::Matrix<double, 3, 3>     { return franka_timeout_handler::default_rotation_stiffness; });
-    m.def("default_translation_damping",        []() -> Eigen::Matrix<double, 3, 3>     { return franka_timeout_handler::default_translation_damping; });
-    m.def("default_rotation_damping",           []() -> Eigen::Matrix<double, 3, 3>     { return franka_timeout_handler::default_rotation_damping; });
-    m.def("default_control_rotation",           []() -> bool                            { return franka_timeout_handler::default_control_rotation; });
-    m.def("default_target_joint_positions",     []() -> Eigen::Matrix<double, 7, 1>     { return franka_timeout_handler::default_target_joint_positions; });
-    m.def("default_joint_stiffness",            []() -> Eigen::Matrix<double, 7, 7>     { return franka_timeout_handler::default_joint_stiffness; });
-    m.def("default_joint_damping",              []() -> Eigen::Matrix<double, 7, 7>     { return franka_timeout_handler::default_joint_damping; });
-    m.def("default_update",                     []() -> franka_timeout_handler::Update  { return franka_timeout_handler::default_update; });
-    m.def("max_joint_torque",                   []() -> Eigen::Matrix<double, 7, 1>     { return franka_timeout_handler::max_joint_torque; });
+    //update.h
+    pybind11::enum_<franka_timeout_handler::Update>(m, "Update")
+        .value("never", franka_timeout_handler::Update::never)
+        .value("always", franka_timeout_handler::Update::always)
+        .value("if_not_late", franka_timeout_handler::Update::if_not_late);
 }

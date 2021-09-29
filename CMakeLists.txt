@@ -52,6 +52,7 @@ endif()
 add_library(franka_timeout_handler SHARED
 source/cartesian_controller.cpp
 source/controller.cpp
+source/gripper.cpp
 source/joint_controller.cpp
 source/robot.cpp
 source/robot_core.cpp)
