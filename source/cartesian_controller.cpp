@@ -33,15 +33,8 @@ void franka_timeout_handler::CartesianController::_calculate_result()
         Eigen::Quaterniond error_quaternion(_orientation.inverse() * _target_orientation);
         error.tail(3) << error_quaternion.x(), error_quaternion.y(), error_quaternion.z();
         error.tail(3) << -_transform.linear() * error.tail(3);
-        Eigen::Matrix<double, 7, 7> rotation_correction; //Fixing elbow motion. Magical numbers, need to be eleminated
-        rotation_correction.setZero();
-        rotation_correction.diagonal() << 0.5, 1.0, 1.0, 0.5, 0.05, 1.0, 0.05;
-        _joint_torques << rotation_correction * (_jacobian.transpose() * (-stiffness * error - damping * _velocity_rotation) + _coriolis);
     }
-    else
-    {
-        _joint_torques << _jacobian.transpose() * (-stiffness * error - damping * _velocity_rotation) + _coriolis;
-    }
+    _joint_torques << _jacobian.transpose() * (-stiffness * error - damping * _velocity_rotation) + _coriolis;
 }
 
 void franka_timeout_handler::CartesianController::_robot_output_to_late_output()
@@ -56,11 +49,6 @@ void franka_timeout_handler::CartesianController::_robot_output_to_late_output()
     if (_robot->_update_control_rotation == Update::always) { _late_control_rotation = _robot->_control_rotation; _late_update_control_rotation = true; }    
 }
 
-franka_timeout_handler::ControllerType franka_timeout_handler::CartesianController::typ() const
-{
-    return ControllerType::cartesian;
-}
-
 void franka_timeout_handler::CartesianController::_late_output_to_output()
 {
     Controller::_late_output_to_output();
@@ -71,4 +59,22 @@ void franka_timeout_handler::CartesianController::_late_output_to_output()
     if (_late_update_translation_damping) { _translation_damping = _late_translation_damping; _late_update_translation_damping = false; }
     if (_late_update_rotation_damping) { _rotation_damping = _late_rotation_damping; _late_update_rotation_damping = false; }
     if (_late_update_control_rotation) { _control_rotation = _late_control_rotation; _late_update_control_rotation = false; }
+}
+
+franka_timeout_handler::ControllerType franka_timeout_handler::CartesianController::typ() const
+{
+    return ControllerType::cartesian;
+}
+
+void franka_timeout_handler::CartesianController::start(RobotCore *robot_core)
+{
+    if (_started) throw std::runtime_error("franka_timeout_handler::CartesianController::start(): Controller was already started");
+    _late_update_target_position       = false;
+    _late_update_target_orientation    = false;
+	_late_update_translation_stiffness = false;
+    _late_update_rotation_stiffness    = false;
+	_late_update_translation_damping   = false;
+    _late_update_rotation_damping      = false;
+    _late_update_control_rotation      = false;
+    Controller::start(robot_core);
 }

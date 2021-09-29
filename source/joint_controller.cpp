@@ -35,3 +35,12 @@ franka_timeout_handler::ControllerType franka_timeout_handler::JointController::
 {
     return ControllerType::joint;
 }
+
+void franka_timeout_handler::JointController::start(RobotCore *robot_core)
+{
+    if (_started) throw std::runtime_error("franka_timeout_handler::JointController::start(): Controller was already started");
+    _late_update_target_joint_positions    = false;
+    _late_update_joint_stiffness           = false;
+    _late_update_joint_damping             = false;
+    Controller::start(robot_core);
+}

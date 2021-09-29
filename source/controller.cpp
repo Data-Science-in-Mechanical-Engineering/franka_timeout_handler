@@ -170,12 +170,22 @@ void franka_timeout_handler::Controller::_control(const franka::RobotState &robo
     }
 }
 
-franka_timeout_handler::Controller::Controller(RobotCore *robot_core)
+void franka_timeout_handler::Controller::start(RobotCore *robot_core)
 {
-    _robot = robot_core;
-    
-    //Init call count
-    _call = 0;
+    //Init state
+    if (_started) throw std::runtime_error("franka_timeout_handler::Controller::start(): Controller was already started");
+    _started                        = true;
+    _receive_state                  = ReceiveState::other;
+    _send_state                     = SendState::other;
+    _frequency_divider_count        = 0;
+    _call                           = 0;
+    _late_update_timeout            = false;
+	_late_update_joint_torques_limit= false;
+    _late_update_frequency_divider  = false;
+    _robot                          = robot_core;
+    _receive_condition              = PTHREAD_COND_INITIALIZER;
+    _send_condition                 = PTHREAD_COND_INITIALIZER;
+    _mutex                          = PTHREAD_MUTEX_INITIALIZER;    
 
     //Init outputs
     _robot_output_to_output();
@@ -212,8 +222,25 @@ franka_timeout_handler::Controller::Controller(RobotCore *robot_core)
     }, this) != 0) throw std::runtime_error("franka_timeout_handler: pthread_create failed");
 }
 
+void franka_timeout_handler::Controller::stop()
+{
+    if (!_started) throw std::runtime_error("franka_timeout_handler::Controller::stop(): Controller was not started");
+
+    pthread_mutex_lock(&_mutex);
+    _receive_state = ReceiveState::destructor;
+    pthread_cond_wait(&_receive_condition, &_mutex);
+    _receive_state = ReceiveState::other;
+    pthread_mutex_unlock(&_mutex);
+
+    pthread_join(_backend_thread, nullptr);
+    pthread_cond_destroy(&_receive_condition);
+    pthread_cond_destroy(&_send_condition);
+    pthread_mutex_destroy(&_mutex);
+}
+
 void franka_timeout_handler::Controller::receive()
 {
+    if (!_started) throw std::runtime_error("franka_timeout_handler::Controller::receive(): Controller was not started");
     pthread_mutex_lock(&_mutex);
     _receive_state = ReceiveState::receive;
     pthread_cond_wait(&_receive_condition, &_mutex);
@@ -223,6 +250,7 @@ void franka_timeout_handler::Controller::receive()
 		
 void franka_timeout_handler::Controller::send()
 {
+    if (!_started) throw std::runtime_error("franka_timeout_handler::Controller::send(): Controller was not started");
     pthread_mutex_lock(&_mutex);
     bool error = _receive_state != ReceiveState::post_receive;
     if (!error)
@@ -254,11 +282,12 @@ void franka_timeout_handler::Controller::send()
     }
     pthread_mutex_unlock(&_mutex);
 
-    if (error) throw std::runtime_error("franka_timeout_handler: Controller did not call receive()");
+    if (error) throw std::runtime_error("franka_timeout_handler::Controller did not call receive()");
 }
 
 void franka_timeout_handler::Controller::receive_and_send()
 {
+    if (!_started) throw std::runtime_error("franka_timeout_handler::Controller::receive_and_send(): Controller was not started");
     pthread_mutex_lock(&_mutex);
     _receive_state = ReceiveState::receive_and_send;
     pthread_cond_wait(&_receive_condition, &_mutex);
@@ -268,20 +297,7 @@ void franka_timeout_handler::Controller::receive_and_send()
 
 void franka_timeout_handler::Controller::send_and_receive()
 {
+    if (!_started) throw std::runtime_error("franka_timeout_handler::Controller::send_and_receive(): Controller was not started");
     send();
     receive();
-}
-
-franka_timeout_handler::Controller::~Controller()
-{
-    pthread_mutex_lock(&_mutex);
-    _receive_state = ReceiveState::destructor;
-    pthread_cond_wait(&_receive_condition, &_mutex);
-    _receive_state = ReceiveState::other;
-    pthread_mutex_unlock(&_mutex);
-
-    pthread_join(_backend_thread, nullptr);
-    pthread_cond_destroy(&_receive_condition);
-    pthread_cond_destroy(&_send_condition);
-    pthread_mutex_destroy(&_mutex);
 }

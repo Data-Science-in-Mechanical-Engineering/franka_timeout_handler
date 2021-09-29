@@ -16,13 +16,19 @@ franka_timeout_handler::RobotCore::RobotCore(std::string ip) : _robot(ip)
 void franka_timeout_handler::RobotCore::start(ControllerType typ)
 {
     stop();
-    if (typ == ControllerType::cartesian) _controller = new CartesianController(this);
-    else _controller = new JointController(this);
+    if (typ == ControllerType::cartesian) _controller = new CartesianController;
+    else _controller = new JointController;
+    _controller->start(this);
 }
 
 void franka_timeout_handler::RobotCore::stop()
 {
-    if (_controller != nullptr) { delete _controller; _controller = nullptr; }
+    if (_controller != nullptr)
+    {
+        _controller->stop();
+        delete _controller;
+        _controller = nullptr;
+    }
 }
 
 bool franka_timeout_handler::RobotCore::started() const

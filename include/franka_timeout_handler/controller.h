@@ -35,6 +35,7 @@ namespace franka_timeout_handler
         };
 
         //States
+        bool _started                           = false;
         ReceiveState _receive_state             = ReceiveState::other;
         SendState _send_state                   = SendState::other;
         unsigned int _frequency_divider_count   = 0;
@@ -46,7 +47,7 @@ namespace franka_timeout_handler
         Eigen::Matrix<double, 3, 1> _position;
         Eigen::Quaterniond _orientation;
         Eigen::Matrix<double, 6, 1> _velocity_rotation;
-        std::uint64_t _call;
+        std::uint64_t _call                     = 0;
 
         //Calculation
         Eigen::Matrix<double, 7, 1> _coriolis;
@@ -93,13 +94,13 @@ namespace franka_timeout_handler
 
         virtual ControllerType typ() const = 0;
 
-        //Main functionality, can not be overloaded
+        //Main functionality
+        virtual void start(RobotCore *robot_core);
+        virtual void stop(); //Calling virtual functions does not work from destructor (because hi-level class is already destroyed), so stop() and start() must be used right before destructor/after constructor
         void _control(const franka::RobotState &robot_state);
         void receive();
 		void send();
 		void receive_and_send();
 		void send_and_receive();
-        Controller(RobotCore *robot_core);
-        ~Controller();
     };
 }

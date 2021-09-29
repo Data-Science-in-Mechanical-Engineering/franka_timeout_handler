@@ -35,7 +35,10 @@ namespace franka_timeout_handler
         virtual void _calculate_result();
         virtual void _robot_output_to_late_output();
         virtual void _late_output_to_output();
+
+    public:
+        //Overloadings
         virtual ControllerType typ() const;
-        using Controller::Controller;
+        virtual void start(RobotCore *robot_core);
 	};
 }
