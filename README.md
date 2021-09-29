@@ -1,10 +1,10 @@
-# Welcome to `franka_timeout_handler`!
+# Welcome to `franka_real_time`!
 Here you will find a library for Franka Emika Panda robot, which allows you to send messages to real-time controller from non-real-time application without breaking robot's real-time requirements.
 
 **CAUTION** This is a legacy branch. It is not developed actively. It is not compable with other branches.
 
 ### Contents
-1. [Welcome to franka_timeout_handler](#welcome-franka_timeout_handler)
+1. [Welcome to franka_real_time](#welcome-franka_real_time)
 2. [Contents](#contents)
 4. [Usage](#usage)
 4. [Dependencies](#dependencies)
@@ -34,7 +34,7 @@ Straightforward `Python` translation of this code is possible, but if `Python` f
 int main()
 {
 	//Create robot and start control loop
-	franka_timeout_handler::Robot robot("192.168.0.1");
+	franka_real_time::Robot robot("192.168.0.1");
 	robot.start();
 	//Wait for call
 	robot.receive();
@@ -68,7 +68,7 @@ The library depends on:
  - C++11 compatible compiler
 
 ### Building
-`franka_timeout_handler` can be built with [CMake](https://cmake.org) using following commands:
+`franka_real_time` can be built with [CMake](https://cmake.org) using following commands:
 ```
 mkdir build
 cd build
