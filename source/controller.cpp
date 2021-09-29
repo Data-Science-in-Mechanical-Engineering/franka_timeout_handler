@@ -180,7 +180,7 @@ void franka_timeout_handler::Controller::start(RobotCore *robot_core)
     _frequency_divider_count        = 0;
     _call                           = 0;
     _late_update_timeout            = false;
-	_late_update_joint_torques_limit= false;
+    _late_update_joint_torques_limit= false;
     _late_update_frequency_divider  = false;
     _robot                          = robot_core;
     _receive_condition              = PTHREAD_COND_INITIALIZER;
@@ -247,7 +247,7 @@ void franka_timeout_handler::Controller::receive()
     _receive_state = ReceiveState::post_receive;
     pthread_mutex_unlock(&_mutex);
 }
-		
+        
 void franka_timeout_handler::Controller::send()
 {
     if (!_started) throw std::runtime_error("franka_timeout_handler::Controller::send(): Controller was not started");

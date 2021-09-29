@@ -5,7 +5,7 @@
 
 namespace franka_timeout_handler
 {
-    ///Default timeout
+    ///Default timeout in microseconds
     static const unsigned int default_timeout = 300;
 
     ///Default joint torque limit
@@ -38,7 +38,7 @@ namespace franka_timeout_handler
     ///Default cartesian rotational damping matrix
     static const Eigen::Matrix<double, 3, 3> default_rotation_damping = 2 * sqrt(10.0) * Eigen::Matrix<double, 3, 3>::Identity();
 
-    ///Default mode of rotation suppressionyes
+    ///Default mode of orientation control
     static const bool default_control_rotation = true;
 
     ///Raw default joint target angles

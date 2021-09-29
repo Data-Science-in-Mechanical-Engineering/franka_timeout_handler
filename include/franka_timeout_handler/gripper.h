@@ -7,8 +7,8 @@
 namespace franka_timeout_handler
 {
     ///Simple class for robot's gripper. It is made for reasons of completenes and autonomy, and is not capable of any timeout handling.
-	class Gripper
-	{
+    class Gripper
+    {
     private:
         franka::Gripper *_gripper;
         std::thread _thread;
@@ -21,7 +21,7 @@ namespace franka_timeout_handler
         bool homing();
         ///Returns fingers' width
         double get_width();
-        ///Returns if fingers are grasped, i.e. (width - epsillon_inner) < real_width < (width + epsillon_outer)
+        ///Returns fingers have grasped object, i.e. (width - epsillon_inner) < real_width < (width + epsillon_outer)
         bool get_grasped();
         ///Returns fingers' temperature
         double get_temperature();
@@ -39,5 +39,5 @@ namespace franka_timeout_handler
         void async_grasp(double width, double speed, double force, double epsilon_inner = 0.005, double epsilon_outer = 0.005);
         ///Destroys gripper
         ~Gripper();
-	};
+    };
 }

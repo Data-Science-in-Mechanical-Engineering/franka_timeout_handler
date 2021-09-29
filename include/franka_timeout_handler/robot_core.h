@@ -17,9 +17,9 @@ namespace franka_timeout_handler
     class CartesianController;
     class JointController;
 
-	///Franka Emika Panda robot
-	class RobotCore
-	{
+    ///Basic functionality of Franka Emika robot
+    class RobotCore
+    {
     friend Controller;
     friend CartesianController;
     friend JointController;
@@ -31,9 +31,9 @@ namespace franka_timeout_handler
         //Input
         Eigen::Matrix<double, 7, 1> _joint_positions;
         Eigen::Matrix<double, 7, 1> _joint_velocities;
-		Eigen::Matrix<double, 3, 1> _position;
+        Eigen::Matrix<double, 3, 1> _position;
         Eigen::Quaterniond _orientation;
-		Eigen::Matrix<double, 3, 1> _velocity;
+        Eigen::Matrix<double, 3, 1> _velocity;
         Eigen::Matrix<double, 3, 1> _rotation;
         std::uint64_t _call;
 
@@ -52,7 +52,7 @@ namespace franka_timeout_handler
         Eigen::Matrix<double, 7, 7> _joint_stiffness        = default_joint_stiffness;
         Eigen::Matrix<double, 7, 7> _joint_damping          = default_joint_damping;
 
-		Update _update_timeout                  = default_update;
+        Update _update_timeout                  = default_update;
         Update _update_joint_torques_limit      = default_update;
         Update _update_frequency_divider        = default_update;
         Update _update_target_position          = default_update;
@@ -67,15 +67,15 @@ namespace franka_timeout_handler
         Update _update_joint_damping            = default_update;
         
         //Result
-		Eigen::Matrix<double, 7, 1> _joint_torques  = Eigen::Matrix<double, 7, 1>::Zero();
+        Eigen::Matrix<double, 7, 1> _joint_torques  = Eigen::Matrix<double, 7, 1>::Zero();
         Update _update_joint_torques                = default_update;
-		bool _late                                  = false;
+        bool _late                                  = false;
 
-	public:
+    public:
         //Basic:
         ///Creates robot core
         ///@param ip IPv4 address of the robot
-		RobotCore(std::string ip);
+        RobotCore(std::string ip);
         ///Starts controller
         ///@param typ Type of controller
         void start(ControllerType typ);
@@ -85,33 +85,33 @@ namespace franka_timeout_handler
         bool started() const;
         ///Returns type of controller
         ControllerType typ() const;
-		///Waits for next signal (if controller is running) and refreshes inputs
-		void receive();
-		///Sends signal back, updates outputs, refreshes results
-		void send();
-		///Waits for signal and immediately sends signal back with no chance to be late, refreshes inputs and results, updates outputs
-		void receive_and_send();
-		///Sends signal back and waits for new signal, updates outputs, refreshes results and then inputs
-		void send_and_receive();       
+        ///Waits for next signal (if controller is running) and refreshes inputs
+        void receive();
+        ///Sends signal back, updates outputs, refreshes results
+        void send();
+        ///Waits for signal and immediately sends signal back with no chance to be late, refreshes inputs and results, updates outputs
+        void receive_and_send();
+        ///Sends signal back and waits for new signal, updates outputs, refreshes results and then inputs
+        void send_and_receive();       
 
         //Input:
         ///Returns joint positions (input)
-		Eigen::Matrix<double, 7, 1> get_joint_positions()   const;
+        Eigen::Matrix<double, 7, 1> get_joint_positions()   const;
         ///Returns joint velocities (input)
-		Eigen::Matrix<double, 7, 1> get_joint_velocities()  const;
-		///Returns cartesian position (input)
-		Eigen::Matrix<double, 3, 1> get_position()          const;
+        Eigen::Matrix<double, 7, 1> get_joint_velocities()  const;
+        ///Returns cartesian position (input)
+        Eigen::Matrix<double, 3, 1> get_position()          const;
         ///Returns cartesian orientation (input)
-		Eigen::Quaterniond get_orientation()                const;
+        Eigen::Quaterniond get_orientation()                const;
         ///Returns cartesian orientation in Euler angles: yaw, pitch, roll (input)
         Eigen::Matrix<double, 3, 1> get_orientation_euler() const;
-        ///Returns cartesian orientation as quanterion, but in XYZW form (output)
+        ///Returns cartesian orientation as quanterion, but in XYZW form (input)
         Eigen::Matrix<double, 4, 1> get_orientation_wxyz()  const;
-		///Returns cartesian velocity (input)
-		Eigen::Matrix<double, 3, 1> get_velocity()          const;
+        ///Returns cartesian velocity (input)
+        Eigen::Matrix<double, 3, 1> get_velocity()          const;
         ///Returns cartesian rotation (input)
-		Eigen::Matrix<double, 3, 1> get_rotation()          const;
-        ///Returns call number (input)
+        Eigen::Matrix<double, 3, 1> get_rotation()          const;
+        ///Returns call number, call happens every millisecond (input)
         std::uint64_t get_call()                            const;
 
         //Output:
@@ -121,29 +121,29 @@ namespace franka_timeout_handler
         void set_joint_torques_limit(double limit);
         ///Sets frequency divider (output)
         void set_frequency_divider(unsigned int divider);
-        ///Sets cartesian position of tartget (output, cartesian only)
+        ///Sets cartesian position of target (output)
         void set_target_position(const Eigen::Matrix<double, 3, 1> &position);
-        ///Sets cartesian orientation of tartget (output, cartesian only)
+        ///Sets cartesian orientation of tartget (output)
         void set_target_orientation(const Eigen::Quaterniond &orientation);
-        ///Sets cartesian orientation of target in Euler angles: yaw, pitch, roll (output, cartesian only)
+        ///Sets cartesian orientation of target in Euler angles: yaw, pitch, roll (output)
         void set_target_orientation_euler(const Eigen::Matrix<double, 3, 1> &euler);
-        ///Sets cartesian orientation of target as quanterion, but in XYZW form (output, cartesian only)
+        ///Sets cartesian orientation of target as quanterion, but in XYZW form (output)
         void set_target_orientation_wxyz(const Eigen::Matrix<double, 4, 1> &wxyz);
-        ///Sets translation stiffness matrix (output, cartesian only)
+        ///Sets translation stiffness matrix (output)
         void set_translation_stiffness(const Eigen::Matrix<double, 3, 3> &stiffness);
-        ///Sets rotation stiffness matrix (output, cartesian only)
+        ///Sets rotation stiffness matrix (output)
         void set_rotation_stiffness(const Eigen::Matrix<double, 3, 3> &stiffness);
-        ///Sets translation damping matrix (output, cartesian only)
+        ///Sets translation damping matrix (output)
         void set_translation_damping(const Eigen::Matrix<double, 3, 3> &damping);
-        ///Sets translation damping matrix (output, cartesian only)
+        ///Sets rotation damping matrix (output)
         void set_rotation_damping(const Eigen::Matrix<double, 3, 3> &damping);
-        ///Sets indicator if rotation should be handled (output, cartesian only)
+        ///Sets indicator if orientation should be controller (output)
         void set_control_rotation(bool control);
-        ///Sets joint-space target (output, joint only)
+        ///Sets joint-space target (output)
         void set_target_joint_positions(const Eigen::Matrix<double, 7, 1> &positions);
-        ///Sets joint-space stiffness matrix (output, joint only)
+        ///Sets joint-space stiffness matrix (output)
         void set_joint_stiffness(const Eigen::Matrix<double, 7, 7> &stiffness);
-        ///Sets joint-space damping matrix (output, joint only)
+        ///Sets joint-space damping matrix (output)
         void set_joint_damping(const Eigen::Matrix<double, 7, 7> &damping);
         ///Returns timeout in microsencods (output)
         unsigned int get_timeout()                                  const;
@@ -151,29 +151,29 @@ namespace franka_timeout_handler
         double get_joint_torques_limit()                            const;
         ///Returns frequency divider (output)
         unsigned int get_frequency_divider()                        const;
-        ///Returns cartesian position of tartget (output, cartesian only)
+        ///Returns cartesian position of tartget (output)
         Eigen::Matrix<double, 3, 1> get_target_position()           const;
-        ///Returns cartesian orientation of tartget (output, cartesian only)
+        ///Returns cartesian orientation of tartget (output)
         Eigen::Quaterniond get_target_orientation()                 const;
-        ///Returns cartesian orientation of target in Euler angles: yaw, pitch, roll (output, cartesian only)
+        ///Returns cartesian orientation of target in Euler angles: yaw, pitch, roll (output)
         Eigen::Matrix<double, 3, 1> get_target_orientation_euler()  const;
-        ///Returns cartesian orientation of target as quanterion, but in XYZW form (output, cartesian only)
+        ///Returns cartesian orientation of target as quanterion, but in XYZW form (output)
         Eigen::Matrix<double, 4, 1> get_target_orientation_wxyz()   const;
-        ///Returns translation stiffness matrix (output, cartesian only)
+        ///Returns translation stiffness matrix (output)
         Eigen::Matrix<double, 3, 3> get_translation_stiffness()     const;
-        ///Returns rotation stiffness matrix (output, cartesian only)
+        ///Returns rotation stiffness matrix (output)
         Eigen::Matrix<double, 3, 3> get_rotation_stiffness()        const;
-        ///Returns translation damping matrix (output, cartesian only)
+        ///Returns translation damping matrix (output)
         Eigen::Matrix<double, 3, 3> get_translation_damping()       const;
-        ///Returns translation damping matrix (output, cartesian only)
+        ///Returns rotation damping matrix (output)
         Eigen::Matrix<double, 3, 3> get_rotation_damping()          const;
-        ///Returns indicator if rotation should be handled (output, cartesian only)
+        ///Returns if orientation should be controlled (output)
         bool get_control_rotation()                                 const;
-        ///Returns joint-space target (output, joint only)
+        ///Returns joint-space target (output)
         Eigen::Matrix<double, 7, 1> get_target_joint_positions()    const;
-        ///Returns joint-space stiffness matrix (output, joint only)
+        ///Returns joint-space stiffness matrix (output)
         Eigen::Matrix<double, 7, 7> get_joint_stiffness()           const;
-        ///Returns joint-space damping matrix (output, joint only)
+        ///Returns joint-space damping matrix (output)
         Eigen::Matrix<double, 7, 7> get_joint_damping()             const;
         ///Sets update mode of timeout (output)
         void set_timeout_update(Update update);
@@ -181,25 +181,25 @@ namespace franka_timeout_handler
         void set_joint_torques_limit_update(Update update);
         ///Sets update mode of frequency divider (output)
         void set_frequency_divider_update(Update update);
-        ///Sets update mode of target cartesian position (output, cartesian only)
+        ///Sets update mode of target cartesian position (output)
         void set_target_position_update(Update update);
-        ///Sets update mode of target cartesian orientation (output, cartesian only)
+        ///Sets update mode of target cartesian orientation (output)
         void set_target_orientation_update(Update update);
-        ///Sets update mode of translation stiffness matrix (output, cartesian only)
+        ///Sets update mode of translation stiffness matrix (output)
         void set_translation_stiffness_update(Update update);
-        ///Sets update mode of rotation stiffness matrix (output, cartesian only)
+        ///Sets update mode of rotation stiffness matrix (output)
         void set_rotation_stiffness_update(Update update);
-        ///Sets update mode of translation damping matrix (output, cartesian only)
+        ///Sets update mode of translation damping matrix (output)
         void set_translation_damping_update(Update update);
-        ///Sets update mode of translation damping matrix (output, cartesian only)
+        ///Sets update mode of rotation damping matrix (output)
         void set_rotation_damping_update(Update update);
-        ///Sets update mode of indicator if rotation should be handled (output, cartesian only)
+        ///Sets update mode of indicator if orientation should be controlled (output)
         void set_control_rotation_update(Update update);
-        ///Sets update mode of joint-space target (output, joint only)
+        ///Sets update mode of joint-space target (output)
         void set_target_joint_positions_update(Update update);
-        ///Sets update mode of joint-space stiffness matrix (output, joint only)
+        ///Sets update mode of joint-space stiffness matrix (output)
         void set_joint_stiffness_update(Update update);
-        ///Sets update mode of joint-space damping matrix (output, joint only)
+        ///Sets update mode of joint-space damping matrix (output)
         void set_joint_damping_update(Update update);
         ///Returns update mode of timeout (output)
         Update get_timeout_update()                 const;
@@ -217,86 +217,129 @@ namespace franka_timeout_handler
         Update get_rotation_stiffness_update()      const;
         ///Returns update mode of translation damping matrix (output)
         Update get_translation_damping_update()     const;
-        ///Returns update mode of translation damping matrix (output)
+        ///Returns update mode of rotation damping matrix (output)
         Update get_rotation_damping_update()        const;
-        ///Returns update mode of indicator if rotation should be handled (output)
+        ///Returns update mode of indicator if orientation should be controlled (output)
         Update get_control_rotation_update()        const;
-        ///Returns update mode of joint-space target (output, joint only)
+        ///Returns update mode of joint-space target (output)
         Update get_target_joint_positions_update()  const;
-        ///Returns update mode of joint-space stiffness matrix (output, joint only)
+        ///Returns update mode of joint-space stiffness matrix (output)
         Update get_joint_stiffness_update()         const;
-        ///Returns update mode of joint-space damping matrix (output, joint only)
+        ///Returns update mode of joint-space damping matrix (output)
         Update get_joint_damping_update()           const;
 
         //Result:
-		///Returns torques sent to the robot (result)
+        ///Returns torques sent to the robot (result)
         Eigen::Matrix<double, 7, 1> get_joint_torques() const;
         ///Returns if `send()` was called too late (result)
-		bool get_late() const;
+        bool get_late() const;
         ///Sets update mode of torques (result)
         void set_joint_torques_update(Update update);
         ///Returns update mode of torques (result)
         Update get_joint_torques_update() const;
 
-		///Destroys robot
-		~RobotCore();
-	};
+        ///Destroys robot
+        ~RobotCore();
+    };
 }
 
-/** @mainpage Welcome to Franka real-time
-Here you will find a small and simple library that allows non-real-time programs to operate with Franka Panda robot at hight frequency.
+/** @mainpage Welcome to `franka_timeout_handler 1.0.0`!
+# Welcome to `franka_timeout_handler 1.0.0`
+here you will find a library for Franka Emika Panda robot, which allows you to send messages to real-time controller from non-real-time application without breaking robot's real-time requirements.
 
 @tableofcontents
 
 @section Usage
 In order to understand what this library does, it may be helpful to take a look at an example of robot control with [libfranka](https://github.com/frankaemika/libfranka):
-@code {.cpp}
-franka::Robot robot("192.168.0.1");
-robot.control([](const franka::RobotState &robot_state, franka::Duration time) -> franka::Torques
+```{.cpp}
+franka::Torques control(const franka::RobotState &robot_state, franka::Duration time)
 {
-	//Robot called our function, we have have ~300 microseconds to analyze `robot_state` and return torques
+	//Robot called the function, now it has ~300 microseconds to analyze `robot_state` and return torques
 	return calculate_torques_from_robot_state(robot_state);
-});
-@endcode
+}
 
-*for `Python` programmers: here a multi-line lambda function that accepts state and returns torques, is passed `robot.control` function*
+int main()
+{
+	//Create robot and pass control function to it
+	franka::Robot robot("192.168.0.1");
+	robot.control(control);
+}
+```
 
-Direct `Python` wrapper of this code is possible, but if `Python` freezes (for example because of garbage collector), an error would occur. The library's goal is to avoid this situation and transform the code above into this:
-@code{.cpp}
-franka_real_time::Robot robot("192.168.0.1");
-robot.start_cartesian();
-//We started control loop, now we need to wait
-robot.receive();
-//The robot called internal function, we have ~300 microseconds to analyze and change `robot`
-robot.send();
-//We might have exceeded the timeout and our changes might be impossible to apply, but nothing critical happened to the robot
-printf(robot.late ? "Late" : "Not late");
-@endcode
+Straightforward `Python` translation of this code is possible, but if `Python` freezes (for example because of the garbage collector), an error will occur. The library's goal is to avoid this situation and transform the code above into this:
+```{.cpp}
+int main()
+{
+	//Create robot and start control loop
+	franka_timeout_handler::Robot robot("192.168.0.1");
+	robot.start(franka_timeout_handler::ControllerType::cartesian);
+	//Wait for call
+	robot.receive();
+	//The call occured, now `main()` has ~300 microseconds to analyze and change `robot` object
+	// ...modifiying `robot`...
+	//Send values back
+	robot.send();
+	//It might have taken longer then ~300 microseconds between receive() and send()
+	//But even in this case nothing critical happens, the robot simply applies previous parameter values in background
+	printf(robot.get_late() ? "Late" : "Not late");
+}
+```
 
 Fields of `Robot` class can be divided in three groups:
+
  - Input: fields are refreshed with `receive()` (positions, velocities, etc.)
- - Output: fields are applied with `send()` (stiffness, damping, etc.)
+
+ - Output: fields are applied with `send()` (targets, parameters, etc.)
+
  - Result: fileds are refreshed with `send()` (torques and lateness indicator)
 
-Note that setters <b>do not</b> actually set values the controoler uses. `send()` or it's variations must be called for that.
+Note that setters **do not** actually set values the controller uses. `send()` or its variations must be called for that.
+
+The simplest `CmakeLists.txt` that uses `franka_timeout_handler` reads:
+```
+project(example)
+cmake_minimum_required(VERSION 3.14.0)
+find_package(franka_timeout_handler 1.0.0 REQUIRED)
+add_executable(example example.cpp)
+target_link_libraries(example PRIVATE franka_timeout_handler)
+```
 
 @section Dependencies
 The library depends on:
- - [libfranka](https://github.com/frankaemika/libfranka) (as part of ROS)
+ - [libfranka](https://github.com/frankaemika/libfranka) (set with `-Dfranka_DIR=/absolute_path_to_libfranka/build` or as part of `ROS`)
  - [Eigen](https://eigen.tuxfamily.org)
  - [pybind11](https://github.com/pybind/pybind11) (optionally)
- - [CMake](https://cmake.org) >= `3.10.2`
+ - [CMake](https://cmake.org) >= `3.14.0`
  - Fully preemptable Linux kernel
- - `C++11` compatible compiler
+ - C++11 compatible compiler
 
-@section Installation
-@code
+@section Building
+`franka_timeout_handler` can be built with [CMake](https://cmake.org) using following commands:
+```
 mkdir build
 cd build
 cmake ..
 cmake --build .
-@endcode
+```
+
+@section Installation
+```
+mkdir build
+cd build
+cmake ..
+cmake --build .
+sudo cmake --install .
+sudo ldconfig
+#Further steps are required only if you plan to use pybind'ded classes from franka_timeout_handler in your pybind'ded library
+cmake .. -Dfranka_timeout_handler_omit_include_directories=yes
+sudo cmake --build .
+cmake --install .
+```
 
 @section Documentation
-[Doxygen](https://www.doxygen.nl) documentation is provided.
+`Python` docstrings are provided. `C++` code is documented with comments. [Doxygen](https://www.doxygen.nl) documentation may be generated with `doxygen` command.
+
+@section Contributors
+ - Kyrylo Sovailo
+ - Sukhija Bhavi
 */

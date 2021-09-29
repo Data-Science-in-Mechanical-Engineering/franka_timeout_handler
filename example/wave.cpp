@@ -16,7 +16,7 @@ int _main(int argc, char **argv)
         robot.start(franka_timeout_handler::ControllerType::cartesian);
         robot.move_target_position(franka_timeout_handler::default_target_position + 0.1 * Eigen::Matrix<double, 3, 1>(0.0, 0.0, 1.0), franka_timeout_handler::default_target_orientation, 3000);
         robot.receive();
-        size_t call0 = robot.get_call();
+        std::uint64_t call0 = robot.get_call();
         const size_t time = 10000;
         const size_t period = 1000;
         size_t late = 0;

@@ -66,7 +66,7 @@ namespace franka_timeout_handler
         //Buffer for laties
         unsigned int _late_timeout;
         bool _late_update_timeout               = false;
-		double _late_joint_torques_limit;
+        double _late_joint_torques_limit;
         bool _late_update_joint_torques_limit   = false;
         unsigned int _late_frequency_divider;
         bool _late_update_frequency_divider     = false;
@@ -99,8 +99,8 @@ namespace franka_timeout_handler
         virtual void stop(); //Calling virtual functions does not work from destructor (because hi-level class is already destroyed), so stop() and start() must be used right before destructor/after constructor
         void _control(const franka::RobotState &robot_state);
         void receive();
-		void send();
-		void receive_and_send();
-		void send_and_receive();
+        void send();
+        void receive_and_send();
+        void send_and_receive();
     };
 }

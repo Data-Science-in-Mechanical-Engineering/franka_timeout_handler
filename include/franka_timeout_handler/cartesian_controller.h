@@ -9,9 +9,9 @@ namespace franka_timeout_handler
     class RobotCore;
     class Robot;
 
-	///Cartesian controller makes robot try to approach given position with given stiffness and daming matrix
-	class CartesianController : public Controller
-	{
+    ///Cartesian controller makes robot try to approach given cartesian position with given stiffness and daming matrix
+    class CartesianController : public Controller
+    {
     friend RobotCore;
     private:
         //Output
@@ -28,11 +28,11 @@ namespace franka_timeout_handler
         bool _late_update_target_position       = false;
         Eigen::Quaterniond _late_target_orientation;
         bool _late_update_target_orientation    = false;
-		Eigen::Matrix<double, 3, 3> _late_translation_stiffness;
+        Eigen::Matrix<double, 3, 3> _late_translation_stiffness;
         bool _late_update_translation_stiffness = false;
         Eigen::Matrix<double, 3, 3> _late_rotation_stiffness;
         bool _late_update_rotation_stiffness    = false;
-		Eigen::Matrix<double, 3, 3> _late_translation_damping;
+        Eigen::Matrix<double, 3, 3> _late_translation_damping;
         bool _late_update_translation_damping   = false;
         Eigen::Matrix<double, 3, 3> _late_rotation_damping;
         bool _late_update_rotation_damping      = false;
@@ -44,10 +44,7 @@ namespace franka_timeout_handler
         virtual void _calculate_result();
         virtual void _robot_output_to_late_output();
         virtual void _late_output_to_output();
-    
-    public:
-        //Overloadings
         virtual ControllerType typ() const;
         virtual void start(RobotCore *robot_core);
-	};
+    };
 }

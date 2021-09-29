@@ -71,9 +71,9 @@ void franka_timeout_handler::CartesianController::start(RobotCore *robot_core)
     if (_started) throw std::runtime_error("franka_timeout_handler::CartesianController::start(): Controller was already started");
     _late_update_target_position       = false;
     _late_update_target_orientation    = false;
-	_late_update_translation_stiffness = false;
+    _late_update_translation_stiffness = false;
     _late_update_rotation_stiffness    = false;
-	_late_update_translation_damping   = false;
+    _late_update_translation_damping   = false;
     _late_update_rotation_damping      = false;
     _late_update_control_rotation      = false;
     Controller::start(robot_core);

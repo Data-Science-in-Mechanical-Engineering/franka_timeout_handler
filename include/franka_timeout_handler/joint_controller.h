@@ -12,9 +12,9 @@ namespace franka_timeout_handler
     class RobotCore;
     class Robot;
     
-	///Joint controller makes robot try to approach given joint-space position with given stiffness and daming matrix
-	class JointController : public Controller
-	{
+    ///Joint controller makes robot try to approach given joint-space position with given stiffness and daming matrix
+    class JointController : public Controller
+    {
     friend RobotCore;
     private:
         //Output
@@ -35,10 +35,7 @@ namespace franka_timeout_handler
         virtual void _calculate_result();
         virtual void _robot_output_to_late_output();
         virtual void _late_output_to_output();
-
-    public:
-        //Overloadings
         virtual ControllerType typ() const;
         virtual void start(RobotCore *robot_core);
-	};
+    };
 }
