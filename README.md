@@ -1,8 +1,8 @@
-# Welcome to `franka_timeout_handler 1.0.0`!
-here you will find a library for Franka Emika Panda robot, which allows you to send messages to real-time controller from non-real-time application without breaking robot's real-time requirements.
+# Welcome to `Franka_timeout_handler 1.1.0`!
+Here you will find a library for Franka Emika Panda robot, which allows you to send messages to real-time controller from non-real-time application without breaking robot's real-time requirements.
 
 ### Contents
-1. [Welcome to franka_timeout_handler](#welcome-franka_timeout_handler)
+1. [Welcome to Franka_timeout_handler](#welcome-to-Franka_timeout_handler)
 2. [Contents](#contents)
 4. [Usage](#usage)
 4. [Dependencies](#dependencies)
@@ -57,18 +57,18 @@ Fields of `Robot` class can be divided in three groups:
 
 Note that setters **do not** actually set values the controller uses. `send()` or its variations must be called for that.
 
-The simplest `CmakeLists.txt` that uses `franka_timeout_handler` reads:
+The simplest `CmakeLists.txt` that uses `Franka_timeout_handler` reads:
 ```
 project(example)
 cmake_minimum_required(VERSION 3.14.0)
-find_package(franka_timeout_handler 1.0.0 REQUIRED)
+find_package(Franka_timeout_handler 1.0.0 REQUIRED)
 add_executable(example example.cpp)
-target_link_libraries(example PRIVATE franka_timeout_handler)
+target_link_libraries(example PRIVATE Franka_timeout_handler)
 ```
 
 ### Dependencies
 The library depends on:
- - [libfranka](https://github.com/frankaemika/libfranka) (set with `-Dfranka_DIR=/absolute_path_to_libfranka/build` or as part of `ROS`)
+ - [libfranka](https://github.com/frankaemika/libfranka) (set with `-DFranka_DIR=/absolute_path_to_libfranka/build` or as part of `ROS`)
  - [Eigen](https://eigen.tuxfamily.org)
  - [pybind11](https://github.com/pybind/pybind11) (optionally)
  - [CMake](https://cmake.org) >= `3.14.0`
@@ -76,7 +76,7 @@ The library depends on:
  - C++11 compatible compiler
 
 ### Building
-`franka_timeout_handler` can be built with [CMake](https://cmake.org) using following commands:
+`Franka_timeout_handler` can be built with [CMake](https://cmake.org) using following commands:
 ```
 mkdir build
 cd build
@@ -92,8 +92,8 @@ cmake ..
 cmake --build .
 sudo cmake --install .
 sudo ldconfig
-#Further steps are required only if you plan to use pybind'ded classes from franka_timeout_handler in your pybind'ded library
-cmake .. -Dfranka_timeout_handler_omit_include_directories=yes
+#Further steps are required only if you plan to use pybind'ded classes from Franka_timeout_handler in your pybind'ded library
+cmake .. -DFranka_timeout_handler_omit_include_directories=yes
 sudo cmake --build .
 cmake --install .
 ```
