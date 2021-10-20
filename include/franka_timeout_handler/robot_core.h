@@ -305,7 +305,7 @@ target_link_libraries(example PRIVATE Franka_timeout_handler)
 
 @section Dependencies
 The library depends on:
- - [libfranka](https://github.com/frankaemika/libfranka) (set with `-Dfranka_DIR=/absolute_path_to_libfranka/build` or as part of `ROS`)
+ - [libfranka](https://github.com/frankaemika/libfranka) (set with `-DFranka_DIR=/absolute_path_to_libfranka/build` or as part of `ROS`)
  - [Eigen](https://eigen.tuxfamily.org)
  - [pybind11](https://github.com/pybind/pybind11) (optionally)
  - [CMake](https://cmake.org) >= `3.14.0`

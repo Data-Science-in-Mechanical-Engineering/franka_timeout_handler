@@ -194,14 +194,18 @@ void franka_timeout_handler::Controller::start(RobotCore *robot_core)
     if (pthread_cond_init(&_receive_condition, nullptr) != 0) throw std::runtime_error("franka_timeout_handler: pthread_cond_init failed");
     if (pthread_cond_init(&_send_condition, nullptr) != 0) throw std::runtime_error("franka_timeout_handler: pthread_cond_init failed");
     if (pthread_mutex_init(&_mutex, nullptr) != 0) throw std::runtime_error("franka_timeout_handler: pthread_mutex_init failed");
-    pthread_attr_t pthread_attributes;
-    if (pthread_attr_init(&pthread_attributes) != 0) throw std::runtime_error("franka_timeout_handler: pthread_attr_init failed");;
-    if (pthread_attr_setschedpolicy(&pthread_attributes, SCHED_FIFO) != 0) throw std::runtime_error("franka_timeout_handler: pthread_attr_setschedpolicy failed");
+    struct PthreadAttributes
+    {
+        pthread_attr_t data;
+        PthreadAttributes() { if (pthread_attr_init(&data) != 0) throw std::runtime_error("franka_timeout_handler: pthread_attr_init failed"); }
+        ~PthreadAttributes() { pthread_attr_destroy(&data); }
+    } pthread_attributes;    
+    if (pthread_attr_setschedpolicy(&pthread_attributes.data, SCHED_FIFO) != 0) throw std::runtime_error("franka_timeout_handler: pthread_attr_setschedpolicy failed");
     sched_param scheduling_parameters;
     scheduling_parameters.sched_priority = 90;
-    if (pthread_attr_setschedparam(&pthread_attributes, &scheduling_parameters) != 0) throw std::runtime_error("franka_timeout_handler: pthread_attr_setschedparam failed");;;
-    if (pthread_attr_setinheritsched(&pthread_attributes, PTHREAD_EXPLICIT_SCHED) != 0) throw std::runtime_error("franka_timeout_handler: pthread_attr_setinheritsched failed");;;
-    if (pthread_create(&_backend_thread, &pthread_attributes, [](void* controller) -> void*
+    if (pthread_attr_setschedparam(&pthread_attributes.data, &scheduling_parameters) != 0) throw std::runtime_error("franka_timeout_handler: pthread_attr_setschedparam failed");
+    if (pthread_attr_setinheritsched(&pthread_attributes.data, PTHREAD_EXPLICIT_SCHED) != 0) throw std::runtime_error("franka_timeout_handler: pthread_attr_setinheritsched failed");
+    if (pthread_create(&_backend_thread, &pthread_attributes.data, [](void* controller) -> void*
     {
         ((Controller*)controller)->_robot->_robot.control([controller](const franka::RobotState &robot_state, franka::Duration duration) -> franka::Torques
         {

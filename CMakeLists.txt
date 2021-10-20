@@ -16,7 +16,7 @@ project(Franka_timeout_handler VERSION 1.1.0)
 set(CMAKE_CXX_STANDARD 11)
 
 #libfranka
-find_package(Franka REQUIRED)
+find_package(Franka)
 if (NOT Franka_FOUND)
 	find_package(catkin REQUIRED COMPONENTS franka_control)
 endif()
