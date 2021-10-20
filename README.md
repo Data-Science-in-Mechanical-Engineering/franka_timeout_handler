@@ -1,4 +1,4 @@
-# Welcome to `Franka_timeout_handler 1.1.0`!
+# Welcome to `Franka_timeout_handler 1.1.1`!
 Here you will find a library for Franka Emika Panda robot, which allows you to send messages to real-time controller from non-real-time application without breaking robot's real-time requirements.
 
 ### Contents
