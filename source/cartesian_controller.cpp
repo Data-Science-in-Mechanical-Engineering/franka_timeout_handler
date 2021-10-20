@@ -201,10 +201,11 @@ void franka_real_time::CartesianController::_control(const franka::RobotState &r
         else
         {
             _send_state = SendState::wait;
-            timespec time;
-            time.tv_sec = 0;
-            time.tv_nsec = 1000 * _timeout;
-            pthread_cond_timedwait(&_send_condition, &_mutex, &time);
+            timespec timeout;
+            clock_gettime(CLOCK_REALTIME, &timeout);
+            timeout.tv_nsec += 1000 * _timeout;
+            if (timeout.tv_nsec > 1000*1000*1000) { timeout.tv_nsec -= 1000*1000*1000; timeout.tv_sec++; } 
+            pthread_cond_timedwait(&_send_condition, &_mutex, &timeout);
             if (_send_state == SendState::post_wait)
             {
                 //Scenario 2: Frontend arrived when backend waited it

@@ -17,7 +17,10 @@ find_package(Eigen3 REQUIRED)
 find_package(pybind11)
 
 #libfranka
-find_package(catkin REQUIRED COMPONENTS franka_control)
+find_package(Franka REQUIRED)
+if (NOT Franka_FOUND)
+	find_package(catkin REQUIRED COMPONENTS franka_control)
+endif()
 
 ###############
 # C++ library #
@@ -28,10 +31,7 @@ source/cartesian_controller.cpp
 source/robot.cpp)
 
 target_include_directories(franka_real_time_cpp PUBLIC ${EIGEN3_INCLUDE_DIRS})
-target_include_directories(franka_real_time_cpp PUBLIC ${franka_control_INCLUDE_DIRS})
-
-target_link_directories(franka_real_time_cpp PUBLIC ${franka_control_LIBRARY_DIRS})
-target_link_libraries(franka_real_time_cpp PUBLIC franka)
+target_link_libraries(franka_real_time_cpp PUBLIC Franka::Franka)
 
 ##################
 # Python library #
