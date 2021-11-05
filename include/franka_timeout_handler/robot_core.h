@@ -43,12 +43,15 @@ namespace franka_timeout_handler
         unsigned int _frequency_divider                     = default_frequency_divider;
         Eigen::Matrix<double, 3, 1> _target_position;       //Read from robot by default
         Eigen::Quaterniond _target_orientation;             //Read from robot by default
+        Eigen::Matrix<double, 3, 1> _target_velocity        = Eigen::Matrix<double, 3, 1>::Zero();
+        Eigen::Matrix<double, 3, 1> _target_rotation        = Eigen::Matrix<double, 3, 1>::Zero();
         Eigen::Matrix<double, 3, 3> _translation_stiffness  = default_translation_stiffness;
         Eigen::Matrix<double, 3, 3> _rotation_stiffness     = default_rotation_stiffness;
         Eigen::Matrix<double, 3, 3> _translation_damping    = default_translation_damping;
         Eigen::Matrix<double, 3, 3> _rotation_damping       = default_rotation_damping;
         bool _control_rotation                              = default_control_rotation;
         Eigen::Matrix<double, 7, 1> _target_joint_positions;//Read from robot by default
+        Eigen::Matrix<double, 7, 1> _target_joint_velocities= Eigen::Matrix<double, 7, 1>::Zero();
         Eigen::Matrix<double, 7, 7> _joint_stiffness        = default_joint_stiffness;
         Eigen::Matrix<double, 7, 7> _joint_damping          = default_joint_damping;
 
@@ -57,12 +60,15 @@ namespace franka_timeout_handler
         Update _update_frequency_divider        = default_update;
         Update _update_target_position          = default_update;
         Update _update_target_orientation       = default_update;
+        Update _update_target_velocity          = default_update;
+        Update _update_target_rotation          = default_update;
         Update _update_translation_stiffness    = default_update;
         Update _update_rotation_stiffness       = default_update;
         Update _update_translation_damping      = default_update;
         Update _update_rotation_damping         = default_update;
         Update _update_control_rotation         = default_update;
         Update _update_target_joint_positions   = default_update;
+        Update _update_target_joint_velocities  = default_update;
         Update _update_joint_stiffness          = default_update;
         Update _update_joint_damping            = default_update;
         
@@ -125,6 +131,10 @@ namespace franka_timeout_handler
         void set_target_position(const Eigen::Matrix<double, 3, 1> &position);
         ///Sets cartesian orientation of tartget (output)
         void set_target_orientation(const Eigen::Quaterniond &orientation);
+        ///Sets cartesian velocity of target (output)
+        void set_target_velocity(const Eigen::Matrix<double, 3, 1> &velocity);
+        ///Sets cartesian rotation of tartget (output)
+        void set_target_rotation(const Eigen::Matrix<double, 3, 1> &rotation);
         ///Sets cartesian orientation of target in Euler angles: yaw, pitch, roll (output)
         void set_target_orientation_euler(const Eigen::Matrix<double, 3, 1> &euler);
         ///Sets cartesian orientation of target as quanterion, but in XYZW form (output)
@@ -141,6 +151,8 @@ namespace franka_timeout_handler
         void set_control_rotation(bool control);
         ///Sets joint-space target (output)
         void set_target_joint_positions(const Eigen::Matrix<double, 7, 1> &positions);
+        ///Sets joint-space velocity (output)
+        void set_target_joint_velocities(const Eigen::Matrix<double, 7, 1> &velocities);
         ///Sets joint-space stiffness matrix (output)
         void set_joint_stiffness(const Eigen::Matrix<double, 7, 7> &stiffness);
         ///Sets joint-space damping matrix (output)
@@ -159,6 +171,10 @@ namespace franka_timeout_handler
         Eigen::Matrix<double, 3, 1> get_target_orientation_euler()  const;
         ///Returns cartesian orientation of target as quanterion, but in XYZW form (output)
         Eigen::Matrix<double, 4, 1> get_target_orientation_wxyz()   const;
+        ///Returns cartesian velocity of tartget (output)
+        Eigen::Matrix<double, 3, 1> get_target_velocity()           const;
+        ///Returns cartesian rotation of target (output)
+        Eigen::Matrix<double, 3, 1> get_target_rotation()           const;
         ///Returns translation stiffness matrix (output)
         Eigen::Matrix<double, 3, 3> get_translation_stiffness()     const;
         ///Returns rotation stiffness matrix (output)
@@ -171,6 +187,8 @@ namespace franka_timeout_handler
         bool get_control_rotation()                                 const;
         ///Returns joint-space target (output)
         Eigen::Matrix<double, 7, 1> get_target_joint_positions()    const;
+        ///Returns joint-space velocity target (output)
+        Eigen::Matrix<double, 7, 1> get_target_joint_velocities()   const;
         ///Returns joint-space stiffness matrix (output)
         Eigen::Matrix<double, 7, 7> get_joint_stiffness()           const;
         ///Returns joint-space damping matrix (output)
@@ -185,6 +203,10 @@ namespace franka_timeout_handler
         void set_target_position_update(Update update);
         ///Sets update mode of target cartesian orientation (output)
         void set_target_orientation_update(Update update);
+        ///Sets update mode of target cartesian velocity (output)
+        void set_target_velocity_update(Update update);
+        ///Sets update mode of target cartesian rotation (output)
+        void set_target_rotation_update(Update update);
         ///Sets update mode of translation stiffness matrix (output)
         void set_translation_stiffness_update(Update update);
         ///Sets update mode of rotation stiffness matrix (output)
@@ -197,6 +219,8 @@ namespace franka_timeout_handler
         void set_control_rotation_update(Update update);
         ///Sets update mode of joint-space target (output)
         void set_target_joint_positions_update(Update update);
+        ///Sets update mode of joint-space velocity target (output)
+        void set_target_joint_velocities_update(Update update);
         ///Sets update mode of joint-space stiffness matrix (output)
         void set_joint_stiffness_update(Update update);
         ///Sets update mode of joint-space damping matrix (output)
@@ -211,6 +235,10 @@ namespace franka_timeout_handler
         Update get_target_position_update()         const;
         ///Returns update mode of target cartesian orientation (output)
         Update get_target_orientation_update()      const;
+        ///Returns update mode of target cartesian velocity (output)
+        Update get_target_velocity_update()         const;
+        ///Returns update mode of target cartesian rotation (output)
+        Update get_target_rotation_update()         const;
         ///Returns update mode of translation stiffness matrix (output)
         Update get_translation_stiffness_update()   const;
         ///Returns update mode of rotation stiffness matrix (output)
@@ -223,6 +251,8 @@ namespace franka_timeout_handler
         Update get_control_rotation_update()        const;
         ///Returns update mode of joint-space target (output)
         Update get_target_joint_positions_update()  const;
+        ///Returns update mode of joint-space velocity target (output)
+        Update get_target_joint_velocities_update()  const;
         ///Returns update mode of joint-space stiffness matrix (output)
         Update get_joint_stiffness_update()         const;
         ///Returns update mode of joint-space damping matrix (output)
@@ -243,7 +273,7 @@ namespace franka_timeout_handler
     };
 }
 
-/** @mainpage Welcome to `Franka_timeout_handler 1.1.1`!
+/** @mainpage Welcome to `Franka_timeout_handler 1.2.0`!
 Here you will find a library for Franka Emika Panda robot, which allows you to send messages to real-time controller from non-real-time application without breaking robot's real-time requirements.
 
 @tableofcontents

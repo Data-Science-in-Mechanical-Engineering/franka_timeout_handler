@@ -17,6 +17,8 @@ namespace franka_timeout_handler
         //Output
         Eigen::Matrix<double, 3, 1> _target_position;
         Eigen::Quaterniond _target_orientation;
+        Eigen::Matrix<double, 3, 1> _target_velocity;
+        Eigen::Matrix<double, 3, 1> _target_rotation;
         Eigen::Matrix<double, 3, 3> _translation_stiffness;
         Eigen::Matrix<double, 3, 3> _rotation_stiffness;
         Eigen::Matrix<double, 3, 3> _translation_damping;
@@ -28,6 +30,10 @@ namespace franka_timeout_handler
         bool _late_update_target_position       = false;
         Eigen::Quaterniond _late_target_orientation;
         bool _late_update_target_orientation    = false;
+        Eigen::Matrix<double, 3, 1> _late_target_velocity;
+        bool _late_update_target_velocity       = false;
+        Eigen::Matrix<double, 3, 1> _late_target_rotation;
+        bool _late_update_target_rotation       = false;
         Eigen::Matrix<double, 3, 3> _late_translation_stiffness;
         bool _late_update_translation_stiffness = false;
         Eigen::Matrix<double, 3, 3> _late_rotation_stiffness;

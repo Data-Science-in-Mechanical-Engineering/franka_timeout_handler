@@ -19,12 +19,15 @@ namespace franka_timeout_handler
     private:
         //Output
         Eigen::Matrix<double, 7, 1> _target_joint_positions;
+        Eigen::Matrix<double, 7, 1> _target_joint_velocities;
         Eigen::Matrix<double, 7, 7> _joint_stiffness;
         Eigen::Matrix<double, 7, 7> _joint_damping;
 
         //Buffer for laties
         Eigen::Matrix<double, 7, 1> _late_target_joint_positions;
         bool _late_update_target_joint_positions    = false;
+        Eigen::Matrix<double, 7, 1> _late_target_joint_velocities;
+        bool _late_update_target_joint_velocities   = false;
         Eigen::Matrix<double, 7, 7> _late_joint_stiffness;
         bool _late_update_joint_stiffness           = false;
         Eigen::Matrix<double, 7, 7> _late_joint_damping;

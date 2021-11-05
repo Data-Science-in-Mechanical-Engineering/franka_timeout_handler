@@ -40,6 +40,8 @@ Eigen::Matrix<double, 7, 1> franka_timeout_handler::Robot::get_joint_impedance()
 void franka_timeout_handler::Robot::move_target_position(const Eigen::Matrix<double, 3, 1> &position, const Eigen::Quaterniond &orientation, unsigned int time)
 {
     receive();
+    set_target_velocity(Eigen::Matrix<double, 3, 1>::Zero());
+    set_target_rotation(Eigen::Matrix<double, 3, 1>::Zero());
     Eigen::Matrix<double, 3, 1> old_position = get_target_position();
     Eigen::Quaterniond old_orientation = get_target_orientation();
     size_t old_call = get_call();
@@ -69,6 +71,7 @@ void franka_timeout_handler::Robot::move_target_position_wxyz(const Eigen::Matri
 void franka_timeout_handler::Robot::move_target_joint_positions(const Eigen::Matrix<double, 7, 1> &positions, unsigned int time)
 {
     receive();
+    set_target_joint_velocities(Eigen::Matrix<double, 7, 1>::Zero());
     Eigen::Matrix<double, 7, 1> old_positions = get_target_joint_positions();
     size_t old_call = get_call();
     while (true)

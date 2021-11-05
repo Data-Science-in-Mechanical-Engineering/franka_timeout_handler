@@ -160,6 +160,16 @@ void franka_timeout_handler::RobotCore::set_target_orientation_wxyz(const Eigen:
     _target_orientation = Eigen::Quaterniond(wxyz(0), wxyz(1), wxyz(2), wxyz(3));
 }
 
+void franka_timeout_handler::RobotCore::set_target_velocity(const Eigen::Matrix<double, 3, 1> &velocity)
+{
+    _target_velocity = velocity;
+}
+
+void franka_timeout_handler::RobotCore::set_target_rotation(const Eigen::Matrix<double, 3, 1> &rotation)
+{
+    _target_rotation = rotation;
+}
+
 void franka_timeout_handler::RobotCore::set_translation_stiffness(const Eigen::Matrix<double, 3, 3> &stiffness)
 {
     _translation_stiffness = stiffness;
@@ -188,6 +198,11 @@ void franka_timeout_handler::RobotCore::set_control_rotation(bool control)
 void franka_timeout_handler::RobotCore::set_target_joint_positions(const Eigen::Matrix<double, 7, 1> &positions)
 {
     _target_joint_positions = positions;
+}
+
+void franka_timeout_handler::RobotCore::set_target_joint_velocities(const Eigen::Matrix<double, 7, 1> &velocities)
+{
+    _target_joint_velocities = velocities;
 }
 
 void franka_timeout_handler::RobotCore::set_joint_stiffness(const Eigen::Matrix<double, 7, 7> &stiffness)
@@ -235,6 +250,16 @@ Eigen::Matrix<double, 4, 1> franka_timeout_handler::RobotCore::get_target_orient
     return Eigen::Matrix<double, 4, 1> (_target_orientation.w(), _target_orientation.x(), _target_orientation.y(), _target_orientation.z());
 }
 
+Eigen::Matrix<double, 3, 1> franka_timeout_handler::RobotCore::get_target_velocity() const
+{
+    return _target_velocity;
+}
+
+Eigen::Matrix<double, 3, 1> franka_timeout_handler::RobotCore::get_target_rotation() const
+{
+    return _target_rotation;
+}
+
 Eigen::Matrix<double, 3, 3> franka_timeout_handler::RobotCore::get_translation_stiffness() const
 {
     return _translation_stiffness;
@@ -263,6 +288,11 @@ bool franka_timeout_handler::RobotCore::get_control_rotation() const
 Eigen::Matrix<double, 7, 1> franka_timeout_handler::RobotCore::get_target_joint_positions() const
 {
     return _target_joint_positions;
+}
+
+Eigen::Matrix<double, 7, 1> franka_timeout_handler::RobotCore::get_target_joint_velocities() const
+{
+    return _target_joint_velocities;
 }
 
 Eigen::Matrix<double, 7, 7> franka_timeout_handler::RobotCore::get_joint_stiffness() const
@@ -300,6 +330,16 @@ void franka_timeout_handler::RobotCore::set_target_orientation_update(Update upd
     _update_target_orientation = update;
 }
 
+void franka_timeout_handler::RobotCore::set_target_velocity_update(Update update)
+{
+    _update_target_velocity = update;
+}
+
+void franka_timeout_handler::RobotCore::set_target_rotation_update(Update update)
+{
+    _update_target_rotation = update;
+}
+
 void franka_timeout_handler::RobotCore::set_translation_stiffness_update(Update update)
 {
     _update_translation_stiffness = update;
@@ -328,6 +368,11 @@ void franka_timeout_handler::RobotCore::set_control_rotation_update(Update updat
 void franka_timeout_handler::RobotCore::set_target_joint_positions_update(Update update)
 {
     _update_target_joint_positions = update;
+}
+
+void franka_timeout_handler::RobotCore::set_target_joint_velocities_update(Update update)
+{
+    _update_target_joint_velocities = update;
 }
 
 void franka_timeout_handler::RobotCore::set_joint_stiffness_update(Update update)
@@ -363,6 +408,16 @@ franka_timeout_handler::Update franka_timeout_handler::RobotCore::get_target_pos
 franka_timeout_handler::Update franka_timeout_handler::RobotCore::get_target_orientation_update() const
 {
     return _update_target_orientation;
+}
+
+franka_timeout_handler::Update franka_timeout_handler::RobotCore::get_target_velocity_update() const
+{
+    return _update_target_velocity;
+}
+
+franka_timeout_handler::Update franka_timeout_handler::RobotCore::get_target_rotation_update() const
+{
+    return _update_target_rotation;
 }
 
 franka_timeout_handler::Update franka_timeout_handler::RobotCore::get_translation_stiffness_update() const
@@ -408,6 +463,11 @@ Eigen::Matrix<double, 7, 1> franka_timeout_handler::RobotCore::get_joint_torques
 franka_timeout_handler::Update franka_timeout_handler::RobotCore::get_target_joint_positions_update() const
 {
     return _update_target_joint_positions;
+}
+
+franka_timeout_handler::Update franka_timeout_handler::RobotCore::get_target_joint_velocities_update() const
+{
+    return _update_target_joint_velocities;
 }
 
 franka_timeout_handler::Update franka_timeout_handler::RobotCore::get_joint_stiffness_update() const

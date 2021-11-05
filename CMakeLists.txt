@@ -6,7 +6,7 @@ cmake_minimum_required(VERSION 3.14.0)
 cmake_policy(SET CMP0048 NEW)
 set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 
-project(Franka_timeout_handler VERSION 1.1.1)
+project(Franka_timeout_handler VERSION 1.2.0)
 
 ################
 # Dependencies #
